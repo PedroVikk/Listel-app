@@ -68,29 +68,38 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ListTile(
-              title: const Text('Modo de exibição'),
-              trailing: SegmentedButton<ThemeMode>(
-                segments: const [
-                  ButtonSegment(
-                      value: ThemeMode.light,
-                      icon: Icon(Icons.light_mode_outlined),
-                      label: Text('Claro')),
-                  ButtonSegment(
-                      value: ThemeMode.system,
-                      icon: Icon(Icons.brightness_auto_outlined),
-                      label: Text('Auto')),
-                  ButtonSegment(
-                      value: ThemeMode.dark,
-                      icon: Icon(Icons.dark_mode_outlined),
-                      label: Text('Escuro')),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Modo de exibição',
+                      style: Theme.of(context).textTheme.bodyLarge),
+                  const SizedBox(height: 12),
+                  SegmentedButton<ThemeMode>(
+                    expandedInsets: EdgeInsets.zero,
+                    segments: const [
+                      ButtonSegment(
+                          value: ThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text('Claro')),
+                      ButtonSegment(
+                          value: ThemeMode.system,
+                          icon: Icon(Icons.brightness_auto_outlined),
+                          label: Text('Auto')),
+                      ButtonSegment(
+                          value: ThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text('Escuro')),
+                    ],
+                    selected: {settings.themeMode},
+                    onSelectionChanged: (sel) {
+                      ref
+                          .read(themeSettingsProvider.notifier)
+                          .updateThemeMode(sel.first);
+                    },
+                  ),
                 ],
-                selected: {settings.themeMode},
-                onSelectionChanged: (sel) {
-                  ref
-                      .read(themeSettingsProvider.notifier)
-                      .updateThemeMode(sel.first);
-                },
               ),
             ),
           ],

@@ -65,23 +65,31 @@ class HomePage extends ConsumerWidget {
             itemBuilder: (context, index) {
               final collection = collections[index];
               final color = Color(collection.colorValue);
-              final isDark = color.computeLuminance() < 0.3;
+              // Luminância: decide cor do texto e estratégia de fundo
+              final lum = color.computeLuminance();
+              final isVeryDark = lum < 0.05; // preto e cores muito escuras
+              final textColor = lum > 0.5 ? Colors.black87 : Colors.white;
 
               return Material(
                 color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
                 child: InkWell(
                   onTap: () => context.push('/collection/${collection.id}'),
                   borderRadius: BorderRadius.circular(16),
                   child: Ink(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color.withValues(alpha: 0.85),
-                          color.withValues(alpha: 0.6),
-                        ],
-                      ),
+                      // Cores muito escuras usam fundo sólido sem transparência
+                      color: isVeryDark ? color : null,
+                      gradient: isVeryDark
+                          ? null
+                          : LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                color,
+                                Color.lerp(color, Colors.black, 0.2)!,
+                              ],
+                            ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Padding(
@@ -98,7 +106,7 @@ class HomePage extends ConsumerWidget {
                                 .textTheme
                                 .titleSmall
                                 ?.copyWith(
-                                  color: isDark ? Colors.white : Colors.black87,
+                                  color: textColor,
                                   fontWeight: FontWeight.w600,
                                 ),
                             maxLines: 2,
