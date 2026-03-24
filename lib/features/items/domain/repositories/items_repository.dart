@@ -1,0 +1,9 @@
+import '../entities/saved_item.dart';
+
+abstract interface class ItemsRepository {
+  Future<List<SavedItem>> getByCollection(String collectionId);
+  Future<SavedItem?> getById(String id);
+  Future<void> save(SavedItem item);
+  Future<void> delete(String id);
+  Stream<List<SavedItem>> watchByCollection(String collectionId);
+}

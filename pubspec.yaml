@@ -1,0 +1,64 @@
+name: wish_nesita
+description: Centralize seus produtos desejados de múltiplas lojas em um só lugar.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Local persistence
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  path_provider: ^2.1.4
+
+  # Navigation
+  go_router: ^14.6.3
+
+  # Share intent (Android)
+  receive_sharing_intent: ^1.8.1
+
+  # Local notifications
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+  # Images
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
+
+  # Utils
+  uuid: ^4.5.1
+  intl: ^0.20.2
+
+  # UI
+  flutter_colorpicker: ^1.1.0
+  shimmer: ^3.0.0
+  cupertino_icons: ^1.0.8
+
+  # Future: Supabase (integrar na v2)
+  # supabase_flutter: ^2.x.x
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  isar_generator: ^3.1.0+1
+  build_runner: ^2.4.13
+  # riverpod_generator removido — providers escritos manualmente, sem @riverpod annotations
+  # custom_lint e riverpod_lint removidos — conflito com isar_generator (analyzer versions)
+  # Reativar quando isar_generator suportar analyzer ^7.x
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
