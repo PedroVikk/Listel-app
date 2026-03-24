@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/collections_provider.dart';
 import '../../../items/presentation/providers/items_provider.dart';
 
@@ -55,13 +57,32 @@ class CollectionDetailPage extends ConsumerWidget {
               return Card(
                 child: ListTile(
                   onTap: () => context.push('/item/${item.id}'),
-                  leading: item.imageUrl != null || item.localImagePath != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: const SizedBox(width: 48, height: 48,
-                              child: Placeholder()),
-                        )
-                      : const Icon(Icons.shopping_bag_outlined),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: item.imageUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: item.imageUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (_, _) => const ColoredBox(
+                                  color: Colors.transparent,
+                                  child: Center(
+                                      child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2)))),
+                              errorWidget: (_, _, _) =>
+                                  const Icon(Icons.shopping_bag_outlined),
+                            )
+                          : item.localImagePath != null
+                              ? Image.file(File(item.localImagePath!),
+                                  fit: BoxFit.cover)
+                              : const Icon(Icons.shopping_bag_outlined),
+                    ),
+                  ),
                   title: Text(item.name,
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   subtitle: item.price != null
