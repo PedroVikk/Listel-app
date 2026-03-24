@@ -16,6 +16,10 @@ subprojects {
                     "com.${project.name.replace("-", "_").replace(".", "_")}"
                 }
             }
+            // isar_flutter_libs usa android:attr/lStar que requer compileSdk >= 31
+            if (compileSdk == null || compileSdk!! < 35) {
+                compileSdk = 35
+            }
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_17
                 targetCompatibility = JavaVersion.VERSION_17

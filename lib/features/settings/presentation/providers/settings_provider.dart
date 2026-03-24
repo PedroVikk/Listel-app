@@ -8,31 +8,30 @@ final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => SettingsRepositoryImpl(),
 );
 
-final themeSettingsProvider = StreamProvider<ThemeSettings>((ref) {
-  final repo = ref.watch(settingsRepositoryProvider);
-  return repo.watch();
-});
-
-class ThemeSettingsNotifier extends Notifier<ThemeSettings> {
+/// Único provider de tema. Carrega do DB no build, atualiza ao salvar.
+/// main.dart observa este provider para aplicar o tema em tempo real.
+class ThemeSettingsNotifier extends AsyncNotifier<ThemeSettings> {
   @override
-  ThemeSettings build() => ThemeSettings.defaults;
+  Future<ThemeSettings> build() async {
+    return ref.watch(settingsRepositoryProvider).get();
+  }
 
   Future<void> updatePrimaryColor(Color color) async {
-    final updated = state.copyWith(primaryColorValue: color.toARGB32());
-    await _repo.save(updated);
-    state = updated;
+    final current = state.valueOrNull ?? ThemeSettings.defaults;
+    final updated = current.copyWith(primaryColorValue: color.toARGB32());
+    await ref.read(settingsRepositoryProvider).save(updated);
+    state = AsyncData(updated);
   }
 
   Future<void> updateThemeMode(ThemeMode mode) async {
-    final updated = state.copyWith(themeMode: mode);
-    await _repo.save(updated);
-    state = updated;
+    final current = state.valueOrNull ?? ThemeSettings.defaults;
+    final updated = current.copyWith(themeMode: mode);
+    await ref.read(settingsRepositoryProvider).save(updated);
+    state = AsyncData(updated);
   }
-
-  SettingsRepository get _repo => ref.read(settingsRepositoryProvider);
 }
 
-final themeSettingsNotifierProvider =
-    NotifierProvider<ThemeSettingsNotifier, ThemeSettings>(
+final themeSettingsProvider =
+    AsyncNotifierProvider<ThemeSettingsNotifier, ThemeSettings>(
   ThemeSettingsNotifier.new,
 );

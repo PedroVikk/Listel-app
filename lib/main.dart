@@ -10,13 +10,8 @@ import 'features/settings/presentation/providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicializa Isar (banco local)
   await IsarService.getInstance();
-
-  // Inicializa notificações locais
   await NotificationService.init();
-
   runApp(const ProviderScope(child: WishNesitaApp()));
 }
 
@@ -31,15 +26,8 @@ class _WishNesitaAppState extends ConsumerState<WishNesitaApp> {
   @override
   void initState() {
     super.initState();
-    _initShareIntent();
-  }
-
-  void _initShareIntent() {
     shareIntentServiceInstance.init(
-      onShared: (data) {
-        // Navega para a tela de recebimento com os dados do share
-        appRouter.go('/share-received', extra: data);
-      },
+      onShared: (data) => appRouter.go('/share-received', extra: data),
     );
   }
 
@@ -51,6 +39,7 @@ class _WishNesitaAppState extends ConsumerState<WishNesitaApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Observa o AsyncNotifier — rebuild automático ao salvar nova cor/tema
     final settingsAsync = ref.watch(themeSettingsProvider);
     final settings = settingsAsync.valueOrNull ?? ThemeSettings.defaults;
 

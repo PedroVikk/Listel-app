@@ -27,26 +27,29 @@ class HomePage extends ConsumerWidget {
         data: (collections) {
           if (collections.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.collections_bookmark_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Nenhuma lista ainda',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Crie sua primeira lista para organizar seus desejos',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.collections_bookmark_outlined,
+                        size: 72,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(height: 16),
+                    Text('Nenhuma lista ainda',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Crie sua primeira lista para organizar seus desejos',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -61,25 +64,48 @@ class HomePage extends ConsumerWidget {
             itemCount: collections.length,
             itemBuilder: (context, index) {
               final collection = collections[index];
-              return Card(
-                clipBehavior: Clip.antiAlias,
+              final color = Color(collection.colorValue);
+              final isDark = color.computeLuminance() < 0.3;
+
+              return Material(
+                color: Colors.transparent,
                 child: InkWell(
                   onTap: () => context.push('/collection/${collection.id}'),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(collection.emoji ?? '🛍️',
-                            style: const TextStyle(fontSize: 32)),
-                        const Spacer(),
-                        Text(
-                          collection.name,
-                          style: Theme.of(context).textTheme.titleSmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  borderRadius: BorderRadius.circular(16),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withValues(alpha: 0.85),
+                          color.withValues(alpha: 0.6),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(collection.emoji ?? '🛍️',
+                              style: const TextStyle(fontSize: 32)),
+                          const Spacer(),
+                          Text(
+                            collection.name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

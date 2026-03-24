@@ -23,42 +23,73 @@ class SettingsPage extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.primary,
                     )),
             const SizedBox(height: 8),
-            ListTile(
-              title: const Text('Cor principal'),
-              subtitle: const Text('Personaliza o tema do app'),
-              trailing: GestureDetector(
-                onTap: () => _pickColor(context, ref, settings.primaryColor),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: settings.primaryColor,
-                    shape: BoxShape.circle,
-                    border:
-                        Border.all(color: Colors.grey.shade300, width: 2),
+            // Preview da cor atual
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: settings.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: settings.primaryColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: settings.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Cor principal',
+                          style: Theme.of(context).textTheme.titleSmall),
+                      Text(
+                        '#${settings.primaryColorValue.toRadixString(16).toUpperCase().substring(2)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color:
+                                  Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: () =>
+                        _pickColor(context, ref, settings.primaryColor),
+                    child: const Text('Trocar'),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 8),
             ListTile(
-              title: const Text('Tema'),
-              trailing: DropdownButton<ThemeMode>(
-                value: settings.themeMode,
-                underline: const SizedBox.shrink(),
-                items: const [
-                  DropdownMenuItem(
-                      value: ThemeMode.system, child: Text('Sistema')),
-                  DropdownMenuItem(
-                      value: ThemeMode.light, child: Text('Claro')),
-                  DropdownMenuItem(
-                      value: ThemeMode.dark, child: Text('Escuro')),
+              title: const Text('Modo de exibição'),
+              trailing: SegmentedButton<ThemeMode>(
+                segments: const [
+                  ButtonSegment(
+                      value: ThemeMode.light,
+                      icon: Icon(Icons.light_mode_outlined),
+                      label: Text('Claro')),
+                  ButtonSegment(
+                      value: ThemeMode.system,
+                      icon: Icon(Icons.brightness_auto_outlined),
+                      label: Text('Auto')),
+                  ButtonSegment(
+                      value: ThemeMode.dark,
+                      icon: Icon(Icons.dark_mode_outlined),
+                      label: Text('Escuro')),
                 ],
-                onChanged: (mode) {
-                  if (mode != null) {
-                    ref
-                        .read(themeSettingsNotifierProvider.notifier)
-                        .updateThemeMode(mode);
-                  }
+                selected: {settings.themeMode},
+                onSelectionChanged: (sel) {
+                  ref
+                      .read(themeSettingsProvider.notifier)
+                      .updateThemeMode(sel.first);
                 },
               ),
             ),
@@ -73,12 +104,13 @@ class SettingsPage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Escolha a cor principal'),
+        title: const Text('Cor principal do app'),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: current,
             onColorChanged: (c) => picked = c,
             labelTypes: const [],
+            pickerAreaHeightPercent: 0.6,
           ),
         ),
         actions: [
@@ -89,7 +121,7 @@ class SettingsPage extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               ref
-                  .read(themeSettingsNotifierProvider.notifier)
+                  .read(themeSettingsProvider.notifier)
                   .updatePrimaryColor(picked);
               Navigator.pop(context);
             },
