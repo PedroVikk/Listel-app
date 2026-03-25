@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../collections/presentation/providers/collections_provider.dart';
 import '../../../collections/domain/entities/collection.dart';
 import '../../../items/presentation/providers/items_provider.dart';
+import '../../../../core/services/metadata_extractor_service.dart';
 
 /// Tela intermediária que exibe o bottom sheet de salvamento rápido.
 /// Ao fechar, retorna para a home.
@@ -30,7 +33,7 @@ class ShareReceivedPage extends ConsumerWidget {
     WidgetRef ref,
     Map<String, dynamic>? data,
   ) async {
-    final result = await showModalBottomSheet<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -41,11 +44,7 @@ class ShareReceivedPage extends ConsumerWidget {
     );
 
     if (context.mounted) {
-      if (result == true) {
-        context.go('/');
-      } else {
-        context.go('/');
-      }
+      context.go('/');
     }
   }
 }
@@ -64,15 +63,43 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
   Collection? _selectedCollection;
   bool _saving = false;
 
+  // Metadata extraction state
+  bool _loadingMeta = false;
+  String? _extractedImageUrl;
+
   @override
   void initState() {
     super.initState();
-    // Pré-popula nome com o texto bruto recebido (URL ou texto)
     final raw = widget.sharedData?['rawText'] as String? ?? '';
     final url = widget.sharedData?['url'] as String? ?? '';
-    // Usa o raw text como nome inicial se não for só uma URL
     if (raw.isNotEmpty && raw != url) {
       _nameController.text = raw.length > 80 ? raw.substring(0, 80) : raw;
+    }
+
+    // Extrai metadados Open Graph se houver URL
+    if (url.isNotEmpty) {
+      _fetchMetadata(url);
+    }
+  }
+
+  Future<void> _fetchMetadata(String url) async {
+    setState(() => _loadingMeta = true);
+    try {
+      final meta = await metadataExtractor.extractFromUrl(url);
+      if (!mounted) return;
+      setState(() {
+        if (meta.title != null && meta.title!.isNotEmpty) {
+          _nameController.text = meta.title!;
+        }
+        if (meta.imageUrl != null) {
+          _extractedImageUrl = meta.imageUrl;
+        }
+        if (meta.price != null && _priceController.text.isEmpty) {
+          _priceController.text = meta.price!.toStringAsFixed(2);
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _loadingMeta = false);
     }
   }
 
@@ -106,6 +133,7 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
             collectionId: _selectedCollection!.id,
             name: _nameController.text.trim(),
             url: widget.sharedData?['url'] as String?,
+            imageUrl: _extractedImageUrl,
             price: price,
             store: widget.sharedData?['store'] as String?,
           );
@@ -144,6 +172,29 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
             child: Text('Salvar produto',
                 style: Theme.of(context).textTheme.titleLarge),
           ),
+
+          // Imagem extraída via Open Graph
+          if (_loadingMeta)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: LinearProgressIndicator(),
+            )
+          else if (_extractedImageUrl != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CachedNetworkImage(
+                  imageUrl: _extractedImageUrl!,
+                  height: 160,
+                  fit: BoxFit.cover,
+                  placeholder: (_, _) => const SizedBox(
+                      height: 160,
+                      child: Center(child: CircularProgressIndicator())),
+                  errorWidget: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
 
           // URL preview
           if (widget.sharedData?['url'] != null)
@@ -190,6 +241,8 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
               ),
               textCapitalization: TextCapitalization.sentences,
               autofocus: true,
+              maxLength: 150,
+              maxLengthEnforcement: MaxLengthEnforcement.enforced,
             ),
           ),
 
@@ -205,6 +258,8 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              maxLength: 12,
+              maxLengthEnforcement: MaxLengthEnforcement.enforced,
             ),
           ),
 

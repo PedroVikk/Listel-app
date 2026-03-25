@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Claude Code / project planning (não versionar)
+.claude/
+.specs/
+guia
+.planning
+
+# Chave de assinatura do APK — NUNCA commitar
+android/key.properties
+android/*.jks
+android/*.keystore
