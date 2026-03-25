@@ -47,6 +47,7 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   shimmer: ^3.0.0
   cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1
 
   # Future: Supabase (integrar na v2)
   # supabase_flutter: ^2.x.x

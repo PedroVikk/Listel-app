@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -240,6 +241,8 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
               ),
               textCapitalization: TextCapitalization.sentences,
               autofocus: true,
+              maxLength: 150,
+              maxLengthEnforcement: MaxLengthEnforcement.enforced,
             ),
           ),
 
@@ -255,6 +258,8 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              maxLength: 12,
+              maxLengthEnforcement: MaxLengthEnforcement.enforced,
             ),
           ),
 

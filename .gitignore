@@ -48,3 +48,9 @@ app.*.map.json
 .claude/
 .specs/
 guia
+.planning
+
+# Chave de assinatura do APK — NUNCA commitar
+android/key.properties
+android/*.jks
+android/*.keystore

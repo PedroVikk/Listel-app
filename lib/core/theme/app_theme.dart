@@ -5,6 +5,7 @@ class AppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
       brightness: Brightness.light,
+      dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
     );
     return _build(colorScheme);
   }
@@ -13,6 +14,7 @@ class AppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
       brightness: Brightness.dark,
+      dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
     );
     return _build(colorScheme);
   }

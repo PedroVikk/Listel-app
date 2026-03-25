@@ -26,6 +26,14 @@ class MetadataExtractorService {
     'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
   };
 
+  static const _maxBodyBytes = 3 * 1024 * 1024; // 3 MB
+  static const _maxBodyChars = 500000;
+
+  // IPs privados e localhost que não devem ser buscados
+  static final _privateHostPattern = RegExp(
+    r'^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)',
+  );
+
   Future<ProductMetadata> extractFromUrl(String rawUrl) async {
     final url = _extractUrl(rawUrl);
     if (url == null) return const ProductMetadata();
@@ -34,14 +42,30 @@ class MetadataExtractorService {
           .get(Uri.parse(url), headers: _headers)
           .timeout(_timeout);
       if (response.statusCode != 200) return const ProductMetadata();
-      return _parseHtml(response.body);
+
+      // Rejeita respostas muito grandes
+      final contentLen = response.contentLength ?? response.bodyBytes.length;
+      if (contentLen > _maxBodyBytes) return const ProductMetadata();
+
+      final body = response.body;
+      final trimmed = body.length > _maxBodyChars
+          ? body.substring(0, _maxBodyChars)
+          : body;
+      return _parseHtml(trimmed);
     } catch (_) {
       return const ProductMetadata();
     }
   }
 
-  String? _extractUrl(String raw) =>
-      RegExp(r'https?://[^\s]+').firstMatch(raw)?.group(0);
+  String? _extractUrl(String raw) {
+    final match = RegExp(r'https?://[^\s]+').firstMatch(raw)?.group(0);
+    if (match == null) return null;
+    final uri = Uri.tryParse(match);
+    if (uri == null || !['http', 'https'].contains(uri.scheme)) return null;
+    // Rejeita IPs privados e localhost
+    if (_privateHostPattern.hasMatch(uri.host)) return null;
+    return match;
+  }
 
   ProductMetadata _parseHtml(String html) {
     return ProductMetadata(
@@ -133,7 +157,10 @@ class MetadataExtractorService {
     final normalized = parts.length > 2
         ? '${parts.take(parts.length - 1).join('')}.${parts.last}'
         : cleaned;
-    return double.tryParse(normalized);
+    final value = double.tryParse(normalized);
+    if (value == null || value.isNaN || value.isInfinite) return null;
+    if (value < 0 || value > 999999.99) return null;
+    return value;
   }
 
   String _decodeHtml(String text) {
@@ -146,7 +173,11 @@ class MetadataExtractorService {
         .replaceAll('&nbsp;', ' ')
         .replaceAllMapped(
           RegExp(r'&#(\d+);'),
-          (m) => String.fromCharCode(int.parse(m.group(1)!)),
+          (m) {
+            final code = int.tryParse(m.group(1)!);
+            if (code == null || code < 32 || code > 0x10FFFF) return '';
+            return String.fromCharCode(code);
+          },
         );
   }
 }

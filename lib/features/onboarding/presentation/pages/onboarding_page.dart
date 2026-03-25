@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/onboarding_service.dart';
 import '../../../../core/router/app_routes.dart';
@@ -67,28 +68,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 children: const [
                   _OnboardingStep(
                     illustration: _WelcomeIllustration(),
+                    svgPath: 'assets/images/onboarding_1.png.svg',
                     title: 'Bem-vindo ao Listel',
                     description:
                         'Seus desejos em um só lugar. Organize produtos das suas lojas favoritas com facilidade.',
                   ),
                   _OnboardingStep(
                     illustration: _ListsIllustration(),
+                    svgPath: 'assets/images/onboarding_2.png.svg',
                     title: 'Crie listas coloridas',
                     description:
                         'Organize por categorias: Roupas, Eletrônicos, Casa e muito mais. Cada lista tem sua cor e emoji.',
                   ),
                   _OnboardingStep(
                     illustration: _AddItemIllustration(),
+                    svgPath: 'assets/images/onboarding_3.png.svg',
                     title: 'Adicione produtos',
                     description:
                         'Salve manualmente ou cole uma URL — o Listel busca foto, nome e preço automaticamente.',
                   ),
                   _OnboardingStep(
                     illustration: _ShareIllustration(),
+                    svgPath: 'assets/images/onboarding_share.png.svg',
                     title: 'Compartilhe de qualquer loja',
                     description:
                         'Na Shopee, Shein, Mercado Livre ou Amazon: toque em Compartilhar, escolha o Listel e o produto é salvo na hora!',
-                    imagePath: 'assets/images/onboarding_share.png',
                   ),
                 ],
               ),
@@ -147,13 +151,13 @@ class _OnboardingStep extends StatelessWidget {
   final Widget illustration;
   final String title;
   final String description;
-  final String? imagePath;
+  final String? svgPath;
 
   const _OnboardingStep({
     required this.illustration,
     required this.title,
     required this.description,
-    this.imagePath,
+    this.svgPath,
   });
 
   @override
@@ -163,14 +167,13 @@ class _OnboardingStep extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Illustration (image asset → fallback widget)
           SizedBox(
             height: 260,
-            child: imagePath != null
-                ? Image.asset(
-                    imagePath!,
+            child: svgPath != null
+                ? SvgPicture.asset(
+                    svgPath!,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => illustration,
+                    placeholderBuilder: (_) => illustration,
                   )
                 : illustration,
           ),

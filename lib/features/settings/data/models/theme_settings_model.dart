@@ -25,5 +25,5 @@ class ThemeSettingsModel {
   static ThemeSettingsModel get defaultModel => ThemeSettingsModel()
     ..isarId = 1
     ..primaryColorValue = ThemeSettings.defaults.primaryColorValue
-    ..themeModeIndex = ThemeSettings.defaults.themeMode.index;
+    ..themeModeIndex = ThemeMode.light.index;
 }

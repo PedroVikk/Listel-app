@@ -39,16 +39,30 @@ class ShareIntentService {
 
     if (text == null) return null;
 
+    final sanitized = _sanitizeText(text, maxLen: 500);
     return {
-      'url': _extractUrl(text),
-      'rawText': text,
-      'store': _inferStore(text),
+      'url': _extractUrl(sanitized),
+      'rawText': sanitized,
+      'store': _inferStore(sanitized),
     };
   }
 
+  /// Remove caracteres de controle (exceto \n e \t) e limita o comprimento.
+  String _sanitizeText(String text, {required int maxLen}) {
+    final cleaned = text.replaceAll(
+      RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'),
+      '',
+    );
+    return cleaned.length > maxLen ? cleaned.substring(0, maxLen) : cleaned;
+  }
+
   String? _extractUrl(String text) {
-    final urlRegex = RegExp(r'https?://[^\s]+');
-    return urlRegex.firstMatch(text)?.group(0);
+    final match = RegExp(r'https?://[^\s]+').firstMatch(text)?.group(0);
+    if (match == null) return null;
+    // Valida scheme e descarta URLs excessivamente longas
+    final uri = Uri.tryParse(match);
+    if (uri == null || !['http', 'https'].contains(uri.scheme)) return null;
+    return match.length > 2000 ? match.substring(0, 2000) : match;
   }
 
   String? _inferStore(String text) {

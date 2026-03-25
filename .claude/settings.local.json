@@ -5,7 +5,11 @@
       "Bash(flutter create:*)",
       "Bash(flutter pub:*)",
       "Bash(flutter analyze:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find /c/opa/WishNesita/lib -type f -name \"*.dart\" -exec grep -l \"SharedPreferences\\\\|json\\\\|localStorage\\\\|cache\" {})",
+      "Bash(xargs ls:*)",
+      "Bash(keytool -genkey -v -keystore listel-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias listel -dname \"CN=Listel, OU=App, O=PedroVictor, L=Brasil, S=Brasil, C=BR\" -storepass \"Listel@Release2024\" -keypass \"Listel@Release2024\")"
     ]
   }
 }

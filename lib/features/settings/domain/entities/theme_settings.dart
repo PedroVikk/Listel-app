@@ -11,7 +11,7 @@ class ThemeSettings {
 
   static const ThemeSettings defaults = ThemeSettings(
     primaryColorValue: 0xFFE91E8C, // pink accent
-    themeMode: ThemeMode.system,
+    themeMode: ThemeMode.light,
   );
 
   Color get primaryColor => Color(primaryColorValue);

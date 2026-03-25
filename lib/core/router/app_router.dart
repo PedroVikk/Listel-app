@@ -19,7 +19,7 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
         path: AppRoutes.onboarding,
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const OnboardingPage(),
-          transitionsBuilder: (_, animation, __, child) =>
+          transitionsBuilder: (_, animation, _, child) =>
               FadeTransition(opacity: animation, child: child),
         ),
       ),

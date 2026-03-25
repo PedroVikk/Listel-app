@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -105,6 +106,8 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Nome do item *'),
             textCapitalization: TextCapitalization.sentences,
+            maxLength: 150,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -113,6 +116,8 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
                 const InputDecoration(labelText: 'Preço (R\$)', hintText: '0,00'),
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
+            maxLength: 12,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -120,6 +125,8 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
             decoration: const InputDecoration(
                 labelText: 'Observações', hintText: 'Opcional...'),
             maxLines: 3,
+            maxLength: 500,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
           ),
           const SizedBox(height: 32),
           FilledButton(
