@@ -36,6 +36,9 @@ dependencies:
   # URL launcher
   url_launcher: ^6.3.1
 
+  # Share
+  share_plus: ^10.1.4
+
   # HTTP (Open Graph metadata extraction)
   http: ^1.2.2
 
