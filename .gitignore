@@ -46,9 +46,11 @@ app.*.map.json
 
 # Claude Code / project planning (não versionar)
 .claude/
+.agents/
 .specs/
 guia
 .planning
+skills-lock.json
 
 # Chave de assinatura do APK — NUNCA commitar
 android/key.properties
