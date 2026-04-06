@@ -1,4 +1,4 @@
-# WishNesita
+# Listel
 
 **Vision:** App mobile Flutter que centraliza produtos desejados de diversas lojas online (Shopee, Shein, Mercado Livre etc.) em um só lugar, organizados em coleções personalizadas.
 **For:** Usuários que compram em múltiplas lojas online e perdem o controle dos produtos salvos em vários carrinhos e apps.
@@ -58,3 +58,25 @@
 - Timeline: sem deadline definido
 - Technical: Android-first, geração de APK; base preparada para backend futuro
 - Resources: desenvolvedor solo
+
+
+REGRA OBRIGATÓRIA — CORES PERSONALIZADAS:
+Em TODA nova tela ou widget criado, NUNCA usar cores hardcoded (Colors.blue, Colors.pink, etc).
+SEMPRE usar as cores do tema ativo via Theme.of(context).colorScheme:
+
+  - Cor primária:       Theme.of(context).colorScheme.primary
+  - Fundo de surface:   Theme.of(context).colorScheme.surface
+  - Cards/containers:   Theme.of(context).colorScheme.surfaceContainerLow / High
+  - Texto sobre fundo:  Theme.of(context).colorScheme.onSurface
+  - Texto secundário:   Theme.of(context).colorScheme.onSurfaceVariant
+  - Destaque/botões:    Theme.of(context).colorScheme.primary / onPrimary
+  - Bordas:             Theme.of(context).colorScheme.outlineVariant
+
+O usuário define a cor primária nas configurações (settings_provider.dart → ThemeSettingsNotifier).
+O tema é aplicado globalmente via MaterialApp.router no main.dart, assistindo themeSettingsProvider.
+A cor salva no Isar vira ColorScheme.fromSeed com DynamicSchemeVariant.fidelity — isso gera toda
+a paleta M3 a partir de uma única seed color.
+
+Pastas (coleções) têm cor própria (collection.colorValue) separada do tema global — usar
+Color(collection.colorValue) nesses casos específicos, não o tema.
+---

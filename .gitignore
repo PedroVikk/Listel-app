@@ -59,3 +59,16 @@ android/*.keystore
 
 # Credenciais Supabase — NUNCA commitar
 lib/core/config/app_config.dart
+planning/overview.md
+planning/planning.md
+planning/task_01_edit_item.md
+planning/task_02_sort_filter.md
+planning/task_03_stats.md
+planning/task_04_notifications.md
+planning/task_05_export_list.md
+planning/task_06_move_item.md
+planning/task_07_global_search.md
+planning/task_08_icon_splash.md
+.gitignore
+planning/task_10_android_widget.md
+planning/task_09_supabase_sync.md
