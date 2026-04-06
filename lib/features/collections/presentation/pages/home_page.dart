@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/collections_provider.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../collections/domain/entities/collection.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final collectionsAsync = ref.watch(collectionsStreamProvider);
+    final localAsync = ref.watch(collectionsStreamProvider);
+    final sharedAsync = ref.watch(sharedCollectionsStreamProvider);
+    final isLoggedIn = Supabase.instance.client.auth.currentUser != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -21,111 +25,370 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: collectionsAsync.when(
+      body: localAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Erro: $e')),
-        data: (collections) {
-          if (collections.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.collections_bookmark_outlined,
-                        size: 72,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(height: 16),
-                    Text('Nenhuma lista ainda',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Crie sua primeira lista para organizar seus desejos',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: collections.length,
-            itemBuilder: (context, index) {
-              final collection = collections[index];
-              final color = Color(collection.colorValue);
-              // Luminância: decide cor do texto e estratégia de fundo
-              final lum = color.computeLuminance();
-              final isVeryDark = lum < 0.05; // preto e cores muito escuras
-              final textColor = lum > 0.5 ? Colors.black87 : Colors.white;
+        data: (local) {
+          final shared = sharedAsync.valueOrNull ?? [];
+          final hasAnything = local.isNotEmpty || shared.isNotEmpty;
 
-              return Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  onTap: () => context.push('/collection/${collection.id}'),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      // Cores muito escuras usam fundo sólido sem transparência
-                      color: isVeryDark ? color : null,
-                      gradient: isVeryDark
-                          ? null
-                          : LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                color,
-                                Color.lerp(color, Colors.black, 0.2)!,
-                              ],
-                            ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(collection.emoji ?? '🛍️',
-                              style: const TextStyle(fontSize: 32)),
-                          const Spacer(),
-                          Text(
-                            collection.name,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  color: textColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
+          if (!hasAnything) {
+            return _EmptyState(isLoggedIn: isLoggedIn);
+          }
+
+          return CustomScrollView(
+            slivers: [
+              if (local.isNotEmpty) ...[
+                _SectionHeader(title: 'Minhas listas'),
+                _CollectionGrid(collections: local, isShared: false),
+              ],
+              if (shared.isNotEmpty) ...[
+                _SectionHeader(title: 'Listas compartilhadas'),
+                _CollectionGrid(collections: shared, isShared: true),
+              ],
+              // Espaço para o FAB não sobrepor o último item
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(AppRoutes.createCollection),
-        icon: const Icon(Icons.add),
-        label: const Text('Nova lista'),
+      floatingActionButton: _HomeFab(
+        onCreateLocal: () => context.push(AppRoutes.createCollection),
+        onCreateShared: () => isLoggedIn
+            ? context.push(AppRoutes.createSharedCollection)
+            : context.push(
+                '${AppRoutes.login}?redirectTo=${AppRoutes.createSharedCollection}'),
+        onJoin: () => isLoggedIn
+            ? context.push(AppRoutes.sharedJoin)
+            : context.push(
+                '${AppRoutes.login}?redirectTo=${AppRoutes.sharedJoin}'),
+      ),
+    );
+  }
+}
+
+// ─── FAB com duas opções ───────────────────────────────────────────────────
+
+class _HomeFab extends StatefulWidget {
+  final VoidCallback onCreateLocal;
+  final VoidCallback onCreateShared;
+  final VoidCallback onJoin;
+
+  const _HomeFab({
+    required this.onCreateLocal,
+    required this.onCreateShared,
+    required this.onJoin,
+  });
+
+  @override
+  State<_HomeFab> createState() => _HomeFabState();
+}
+
+class _HomeFabState extends State<_HomeFab>
+    with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    _expanded ? _controller.forward() : _controller.reverse();
+  }
+
+  void _close() {
+    setState(() => _expanded = false);
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (_expanded) ...[
+          FadeTransition(
+            opacity: _fade,
+            child: _MiniAction(
+              icon: Icons.group_add_outlined,
+              label: 'Entrar com código',
+              onTap: () {
+                _close();
+                widget.onJoin();
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          FadeTransition(
+            opacity: _fade,
+            child: _MiniAction(
+              icon: Icons.wifi_tethering_outlined,
+              label: 'Nova lista compartilhada',
+              onTap: () {
+                _close();
+                widget.onCreateShared();
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          FadeTransition(
+            opacity: _fade,
+            child: _MiniAction(
+              icon: Icons.add_circle_outline,
+              label: 'Nova lista local',
+              onTap: () {
+                _close();
+                widget.onCreateLocal();
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        FloatingActionButton(
+          onPressed: _toggle,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          child: AnimatedRotation(
+            turns: _expanded ? 0.125 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MiniAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(label,
+                style: TextStyle(
+                    color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+          ),
+          const SizedBox(width: 8),
+          FloatingActionButton.small(
+            heroTag: label,
+            onPressed: onTap,
+            backgroundColor: colorScheme.secondaryContainer,
+            foregroundColor: colorScheme.onSecondaryContainer,
+            child: Icon(icon),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Seção e Grid ──────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CollectionGrid extends StatelessWidget {
+  final List<Collection> collections;
+  final bool isShared;
+
+  const _CollectionGrid({required this.collections, required this.isShared});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.1,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final collection = collections[index];
+            // Shared usa remoteId como ID de navegação
+            final navId = isShared
+                ? (collection.remoteId ?? collection.id)
+                : collection.id;
+            return _CollectionCard(
+              collection: collection,
+              navId: navId,
+              isShared: isShared,
+            );
+          },
+          childCount: collections.length,
+        ),
+      ),
+    );
+  }
+}
+
+class _CollectionCard extends StatelessWidget {
+  final Collection collection;
+  final String navId;
+  final bool isShared;
+
+  const _CollectionCard({
+    required this.collection,
+    required this.navId,
+    required this.isShared,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Color(collection.colorValue);
+    final lum = color.computeLuminance();
+    final isVeryDark = lum < 0.05;
+    final textColor = lum > 0.5 ? Colors.black87 : Colors.white;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => context.push('/collection/$navId'),
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: isVeryDark ? color : null,
+            gradient: isVeryDark
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color, Color.lerp(color, Colors.black, 0.2)!],
+                  ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(collection.emoji ?? '🛍️',
+                        style: const TextStyle(fontSize: 28)),
+                    const Spacer(),
+                    if (isShared)
+                      Icon(Icons.wifi_tethering,
+                          size: 16,
+                          color: textColor.withValues(alpha: 0.7)),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  collection.name,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Empty state ───────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  final bool isLoggedIn;
+  const _EmptyState({required this.isLoggedIn});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.collections_bookmark_outlined,
+                size: 72,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 16),
+            Text('Nenhuma lista ainda',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              'Crie sua primeira lista para organizar seus desejos',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

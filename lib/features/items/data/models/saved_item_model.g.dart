@@ -17,70 +17,80 @@ const SavedItemModelSchema = CollectionSchema(
   name: r'SavedItemModel',
   id: 360716595312950800,
   properties: {
-    r'collectionId': PropertySchema(
+    r'addedBy': PropertySchema(
       id: 0,
+      name: r'addedBy',
+      type: IsarType.string,
+    ),
+    r'collectionId': PropertySchema(
+      id: 1,
       name: r'collectionId',
       type: IsarType.string,
     ),
     r'createdAt': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'id': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'id',
       type: IsarType.string,
     ),
     r'imageUrl': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'imageUrl',
       type: IsarType.string,
     ),
     r'localImagePath': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'localImagePath',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'notes',
       type: IsarType.string,
     ),
     r'price': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'price',
       type: IsarType.double,
     ),
+    r'purchasedBy': PropertySchema(
+      id: 9,
+      name: r'purchasedBy',
+      type: IsarType.string,
+    ),
     r'source': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'source',
       type: IsarType.string,
       enumMap: _SavedItemModelsourceEnumValueMap,
     ),
     r'status': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'status',
       type: IsarType.string,
       enumMap: _SavedItemModelstatusEnumValueMap,
     ),
     r'store': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'store',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'url': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'url',
       type: IsarType.string,
     )
@@ -132,6 +142,12 @@ int _savedItemModelEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.addedBy;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.collectionId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   {
@@ -149,6 +165,12 @@ int _savedItemModelEstimateSize(
   bytesCount += 3 + object.name.length * 3;
   {
     final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.purchasedBy;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -176,19 +198,21 @@ void _savedItemModelSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.collectionId);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeString(offsets[2], object.id);
-  writer.writeString(offsets[3], object.imageUrl);
-  writer.writeString(offsets[4], object.localImagePath);
-  writer.writeString(offsets[5], object.name);
-  writer.writeString(offsets[6], object.notes);
-  writer.writeDouble(offsets[7], object.price);
-  writer.writeString(offsets[8], object.source.name);
-  writer.writeString(offsets[9], object.status.name);
-  writer.writeString(offsets[10], object.store);
-  writer.writeDateTime(offsets[11], object.updatedAt);
-  writer.writeString(offsets[12], object.url);
+  writer.writeString(offsets[0], object.addedBy);
+  writer.writeString(offsets[1], object.collectionId);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeString(offsets[3], object.id);
+  writer.writeString(offsets[4], object.imageUrl);
+  writer.writeString(offsets[5], object.localImagePath);
+  writer.writeString(offsets[6], object.name);
+  writer.writeString(offsets[7], object.notes);
+  writer.writeDouble(offsets[8], object.price);
+  writer.writeString(offsets[9], object.purchasedBy);
+  writer.writeString(offsets[10], object.source.name);
+  writer.writeString(offsets[11], object.status.name);
+  writer.writeString(offsets[12], object.store);
+  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeString(offsets[14], object.url);
 }
 
 SavedItemModel _savedItemModelDeserialize(
@@ -198,24 +222,26 @@ SavedItemModel _savedItemModelDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = SavedItemModel();
-  object.collectionId = reader.readString(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.id = reader.readString(offsets[2]);
-  object.imageUrl = reader.readStringOrNull(offsets[3]);
+  object.addedBy = reader.readStringOrNull(offsets[0]);
+  object.collectionId = reader.readString(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.id = reader.readString(offsets[3]);
+  object.imageUrl = reader.readStringOrNull(offsets[4]);
   object.isarId = id;
-  object.localImagePath = reader.readStringOrNull(offsets[4]);
-  object.name = reader.readString(offsets[5]);
-  object.notes = reader.readStringOrNull(offsets[6]);
-  object.price = reader.readDoubleOrNull(offsets[7]);
+  object.localImagePath = reader.readStringOrNull(offsets[5]);
+  object.name = reader.readString(offsets[6]);
+  object.notes = reader.readStringOrNull(offsets[7]);
+  object.price = reader.readDoubleOrNull(offsets[8]);
+  object.purchasedBy = reader.readStringOrNull(offsets[9]);
   object.source =
-      _SavedItemModelsourceValueEnumMap[reader.readStringOrNull(offsets[8])] ??
+      _SavedItemModelsourceValueEnumMap[reader.readStringOrNull(offsets[10])] ??
           ItemSource.shared;
   object.status =
-      _SavedItemModelstatusValueEnumMap[reader.readStringOrNull(offsets[9])] ??
+      _SavedItemModelstatusValueEnumMap[reader.readStringOrNull(offsets[11])] ??
           ItemStatus.pending;
-  object.store = reader.readStringOrNull(offsets[10]);
-  object.updatedAt = reader.readDateTime(offsets[11]);
-  object.url = reader.readStringOrNull(offsets[12]);
+  object.store = reader.readStringOrNull(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.url = reader.readStringOrNull(offsets[14]);
   return object;
 }
 
@@ -227,34 +253,38 @@ P _savedItemModelDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
-    case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
-    case 6:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 9:
+      return (reader.readStringOrNull(offset)) as P;
+    case 10:
       return (_SavedItemModelsourceValueEnumMap[
               reader.readStringOrNull(offset)] ??
           ItemSource.shared) as P;
-    case 9:
+    case 11:
       return (_SavedItemModelstatusValueEnumMap[
               reader.readStringOrNull(offset)] ??
           ItemStatus.pending) as P;
-    case 10:
-      return (reader.readStringOrNull(offset)) as P;
-    case 11:
-      return (reader.readDateTime(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
+    case 14:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -517,6 +547,160 @@ extension SavedItemModelQueryWhere
 
 extension SavedItemModelQueryFilter
     on QueryBuilder<SavedItemModel, SavedItemModel, QFilterCondition> {
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'addedBy',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'addedBy',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'addedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'addedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'addedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'addedBy',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'addedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'addedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'addedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'addedBy',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'addedBy',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      addedByIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'addedBy',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
       collectionIdEqualTo(
     String value, {
@@ -1583,6 +1767,160 @@ extension SavedItemModelQueryFilter
   }
 
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'purchasedBy',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'purchasedBy',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'purchasedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'purchasedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'purchasedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'purchasedBy',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'purchasedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'purchasedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'purchasedBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'purchasedBy',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'purchasedBy',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      purchasedByIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'purchasedBy',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
       sourceEqualTo(
     ItemSource value, {
     bool caseSensitive = true,
@@ -2227,6 +2565,19 @@ extension SavedItemModelQueryLinks
 
 extension SavedItemModelQuerySortBy
     on QueryBuilder<SavedItemModel, SavedItemModel, QSortBy> {
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> sortByAddedBy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'addedBy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      sortByAddedByDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'addedBy', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
       sortByCollectionId() {
     return QueryBuilder.apply(this, (query) {
@@ -2329,6 +2680,20 @@ extension SavedItemModelQuerySortBy
     });
   }
 
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      sortByPurchasedBy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purchasedBy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      sortByPurchasedByDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purchasedBy', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> sortBySource() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'source', Sort.asc);
@@ -2395,6 +2760,19 @@ extension SavedItemModelQuerySortBy
 
 extension SavedItemModelQuerySortThenBy
     on QueryBuilder<SavedItemModel, SavedItemModel, QSortThenBy> {
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> thenByAddedBy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'addedBy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      thenByAddedByDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'addedBy', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
       thenByCollectionId() {
     return QueryBuilder.apply(this, (query) {
@@ -2510,6 +2888,20 @@ extension SavedItemModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      thenByPurchasedBy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purchasedBy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      thenByPurchasedByDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purchasedBy', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> thenBySource() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'source', Sort.asc);
@@ -2576,6 +2968,13 @@ extension SavedItemModelQuerySortThenBy
 
 extension SavedItemModelQueryWhereDistinct
     on QueryBuilder<SavedItemModel, SavedItemModel, QDistinct> {
+  QueryBuilder<SavedItemModel, SavedItemModel, QDistinct> distinctByAddedBy(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'addedBy', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QDistinct>
       distinctByCollectionId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2632,6 +3031,13 @@ extension SavedItemModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SavedItemModel, SavedItemModel, QDistinct> distinctByPurchasedBy(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'purchasedBy', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QDistinct> distinctBySource(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2673,6 +3079,12 @@ extension SavedItemModelQueryProperty
   QueryBuilder<SavedItemModel, int, QQueryOperations> isarIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isarId');
+    });
+  }
+
+  QueryBuilder<SavedItemModel, String?, QQueryOperations> addedByProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'addedBy');
     });
   }
 
@@ -2723,6 +3135,13 @@ extension SavedItemModelQueryProperty
   QueryBuilder<SavedItemModel, double?, QQueryOperations> priceProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'price');
+    });
+  }
+
+  QueryBuilder<SavedItemModel, String?, QQueryOperations>
+      purchasedByProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'purchasedBy');
     });
   }
 

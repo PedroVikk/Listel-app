@@ -30,6 +30,10 @@ class SavedItemModel {
   late DateTime createdAt;
   late DateTime updatedAt;
 
+  // Campos de lista compartilhada — nullable → migração automática pelo Isar
+  String? addedBy;
+  String? purchasedBy;
+
   SavedItem toDomain() => SavedItem(
         id: id,
         collectionId: collectionId,
@@ -44,6 +48,8 @@ class SavedItemModel {
         source: source,
         createdAt: createdAt,
         updatedAt: updatedAt,
+        addedBy: addedBy,
+        purchasedBy: purchasedBy,
       );
 
   static SavedItemModel fromDomain(SavedItem entity) => SavedItemModel()
@@ -59,5 +65,7 @@ class SavedItemModel {
     ..status = entity.status
     ..source = entity.source
     ..createdAt = entity.createdAt
-    ..updatedAt = entity.updatedAt;
+    ..updatedAt = entity.updatedAt
+    ..addedBy = entity.addedBy
+    ..purchasedBy = entity.purchasedBy;
 }

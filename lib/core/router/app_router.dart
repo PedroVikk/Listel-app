@@ -8,6 +8,10 @@ import '../../features/items/presentation/pages/create_item_page.dart';
 import '../../features/share_intent/presentation/pages/share_received_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/sharing/presentation/pages/create_shared_collection_page.dart';
+import '../../features/sharing/presentation/pages/join_collection_page.dart';
+import '../../features/sharing/presentation/pages/members_page.dart';
 import 'app_routes.dart';
 
 GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
@@ -71,6 +75,31 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
       GoRoute(
         path: AppRoutes.settings,
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) {
+          final redirectTo = state.uri.queryParameters['redirectTo'];
+          return LoginPage(redirectTo: redirectTo);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.createSharedCollection,
+        builder: (context, state) => const CreateSharedCollectionPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.sharedJoin,
+        builder: (context, state) {
+          final code = state.uri.queryParameters['code'];
+          return JoinCollectionPage(code: code);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.sharedMembers,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return MembersPage(collectionRemoteId: id);
+        },
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

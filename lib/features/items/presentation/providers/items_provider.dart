@@ -1,16 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/entities/saved_item.dart';
 import '../../domain/repositories/items_repository.dart';
 import '../../data/repositories/items_repository_impl.dart';
+import '../../data/repositories/remote_items_repository_impl.dart';
+import '../../../collections/presentation/providers/collections_provider.dart';
 
 final itemsRepositoryProvider = Provider<ItemsRepository>(
   (ref) => ItemsRepositoryImpl(),
 );
 
+final remoteItemsRepositoryProvider = Provider<ItemsRepository>(
+  (ref) => RemoteItemsRepositoryImpl(Supabase.instance.client),
+);
+
+/// Decide qual repositório usar baseado em se a coleção é compartilhada.
+final _collectionIsSharedProvider =
+    Provider.family<bool, String>((ref, collectionId) {
+  final local = ref.watch(collectionsStreamProvider).valueOrNull ?? [];
+  final shared = ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
+  return shared.any((c) => c.remoteId == collectionId || c.id == collectionId) &&
+      !local.any((c) => c.id == collectionId);
+});
+
 final itemsByCollectionProvider =
     StreamProvider.family<List<SavedItem>, String>((ref, collectionId) {
-  return ref.watch(itemsRepositoryProvider).watchByCollection(collectionId);
+  final isShared = ref.watch(_collectionIsSharedProvider(collectionId));
+  final repo = isShared
+      ? ref.watch(remoteItemsRepositoryProvider)
+      : ref.watch(itemsRepositoryProvider);
+  return repo.watchByCollection(collectionId);
 });
 
 class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {

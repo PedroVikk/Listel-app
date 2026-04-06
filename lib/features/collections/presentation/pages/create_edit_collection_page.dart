@@ -45,7 +45,7 @@ class CreateEditCollectionPage extends ConsumerStatefulWidget {
 class _CreateEditCollectionPageState
     extends ConsumerState<CreateEditCollectionPage> {
   final _nameController = TextEditingController();
-  final _emojiController = TextEditingController(text: '🛍️');
+  final _emojiController = TextEditingController();
   Color _selectedColor = _kCollectionColors.first;
   bool _saving = false;
 
@@ -112,6 +112,9 @@ class _CreateEditCollectionPageState
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          Text('Visualização',
+              style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
           // Preview do card
           Container(
             height: 100,
@@ -126,7 +129,7 @@ class _CreateEditCollectionPageState
               children: [
                 Text(
                   _emojiController.text.isEmpty
-                      ? '🛍️'
+                      ? 'Use um Emoji'
                       : _emojiController.text,
                   style: const TextStyle(fontSize: 36),
                 ),

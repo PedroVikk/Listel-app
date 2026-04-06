@@ -17,6 +17,13 @@ class SavedItem {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Campos de lista compartilhada (Fase 2+)
+  /// Display name de quem adicionou (apenas em listas compartilhadas).
+  final String? addedBy;
+
+  /// Display name de quem marcou como comprado (apenas em listas compartilhadas).
+  final String? purchasedBy;
+
   const SavedItem({
     required this.id,
     required this.collectionId,
@@ -31,6 +38,8 @@ class SavedItem {
     required this.source,
     required this.createdAt,
     required this.updatedAt,
+    this.addedBy,
+    this.purchasedBy,
   });
 
   bool get isPurchased => status == ItemStatus.purchased;
@@ -49,6 +58,8 @@ class SavedItem {
     ItemSource? source,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? addedBy,
+    String? purchasedBy,
   }) {
     return SavedItem(
       id: id ?? this.id,
@@ -64,6 +75,8 @@ class SavedItem {
       source: source ?? this.source,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      addedBy: addedBy ?? this.addedBy,
+      purchasedBy: purchasedBy ?? this.purchasedBy,
     );
   }
 }
