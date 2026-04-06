@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../domain/entities/collection.dart';
 import '../providers/collections_provider.dart';
 import '../../../items/domain/entities/saved_item.dart';
 import '../../../items/presentation/providers/items_provider.dart';
@@ -11,7 +12,12 @@ import '../../../sharing/presentation/pages/invite_page.dart';
 
 class CollectionDetailPage extends ConsumerWidget {
   final String collectionId;
-  const CollectionDetailPage({super.key, required this.collectionId});
+  final Collection? initialCollection;
+  const CollectionDetailPage({
+    super.key,
+    required this.collectionId,
+    this.initialCollection,
+  });
 
   Widget? _itemSubtitle(SavedItem item) {
     final parts = <String>[];
@@ -66,12 +72,14 @@ class CollectionDetailPage extends ConsumerWidget {
     final itemsAsync = ref.watch(itemsByCollectionProvider(collectionId));
 
     // Procura primeiro nas locais, depois nas compartilhadas
+    // initialCollection é usado como fallback enquanto a stream não carregou
     final local = collectionsAsync.valueOrNull ?? [];
     final shared = ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
     final collection = local.where((c) => c.id == collectionId).firstOrNull ??
         shared
             .where((c) => c.remoteId == collectionId || c.id == collectionId)
-            .firstOrNull;
+            .firstOrNull ??
+        initialCollection;
 
     return Scaffold(
       appBar: AppBar(

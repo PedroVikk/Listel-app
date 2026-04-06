@@ -1,8 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/sharing_provider.dart';
+
+const _kCollectionColors = [
+  Color(0xFFE91E8C),
+  Color(0xFFE53935),
+  Color(0xFFD81B60),
+  Color(0xFF8E24AA),
+  Color(0xFF5E35B1),
+  Color(0xFF1E88E5),
+  Color(0xFF039BE5),
+  Color(0xFF00ACC1),
+  Color(0xFF00897B),
+  Color(0xFF43A047),
+  Color(0xFF7CB342),
+  Color(0xFFC0CA33),
+  Color(0xFFFDD835),
+  Color(0xFFFFB300),
+  Color(0xFFFB8C00),
+  Color(0xFFF4511E),
+  Color(0xFF6D4C41),
+  Color(0xFF546E7A),
+  Color(0xFF757575),
+  Color(0xFF000000),
+  Color(0xFFFFFFFF),
+  Color(0xFFFF80AB),
+  Color(0xFF80D8FF),
+  Color(0xFFCCFF90),
+];
 
 class CreateSharedCollectionPage extends ConsumerStatefulWidget {
   const CreateSharedCollectionPage({super.key});
@@ -16,12 +42,13 @@ class _CreateSharedCollectionPageState
     extends ConsumerState<CreateSharedCollectionPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  String? _emoji;
-  Color _color = const Color(0xFF6750A4);
+  final _emojiController = TextEditingController();
+  Color _selectedColor = _kCollectionColors.first;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emojiController.dispose();
     super.dispose();
   }
 
@@ -29,16 +56,20 @@ class _CreateSharedCollectionPageState
     try {
       if (!(_formKey.currentState?.validate() ?? false)) return;
 
+      final emoji = _emojiController.text.trim();
       final collection = await ref
           .read(sharingNotifierProvider.notifier)
           .createSharedCollection(
             name: _nameController.text.trim(),
-            emoji: _emoji,
-            colorValue: _color.toARGB32(),
+            emoji: emoji.isEmpty ? null : emoji,
+            colorValue: _selectedColor.toARGB32(),
           );
 
       if (mounted) {
-        context.go('/collection/${collection.remoteId}');
+        context.pushReplacement(
+          '/collection/${collection.remoteId}',
+          extra: collection,
+        );
       }
     } catch (e, st) {
       debugPrint('ERRO ao criar lista compartilhada: $e\n$st');
@@ -53,27 +84,6 @@ class _CreateSharedCollectionPageState
     }
   }
 
-  void _pickColor() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Cor da lista'),
-        content: SingleChildScrollView(
-          child: BlockPicker(
-            pickerColor: _color,
-            onColorChanged: (c) => setState(() => _color = c),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -81,9 +91,7 @@ class _CreateSharedCollectionPageState
     final loading = sharingState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nova lista compartilhada'),
-      ),
+      appBar: AppBar(title: const Text('Nova lista compartilhada')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -98,8 +106,7 @@ class _CreateSharedCollectionPageState
               ),
               child: Row(
                 children: [
-                  Icon(Icons.wifi_tethering_outlined,
-                      color: colorScheme.primary),
+                  Icon(Icons.wifi_tethering_outlined, color: colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -112,61 +119,117 @@ class _CreateSharedCollectionPageState
             ),
             const SizedBox(height: 24),
 
-            // Emoji
-            Center(
-              child: GestureDetector(
-                onTap: _pickEmoji,
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(20),
+            // Preview
+            Text('Visualização', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Container(
+              height: 100,
+              decoration: BoxDecoration(
+                color: _selectedColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: _selectedColor.withValues(alpha: 0.4), width: 2),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    _emojiController.text.isEmpty
+                        ? 'Use um Emoji'
+                        : _emojiController.text,
+                    style: const TextStyle(fontSize: 36),
                   ),
-                  child: Center(
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Text(
-                      _emoji ?? '🛍️',
-                      style: const TextStyle(fontSize: 36),
+                      _nameController.text.isEmpty
+                          ? 'Nome da lista'
+                          : _nameController.text,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text('Toque para mudar o emoji',
-                  style: TextStyle(
-                      color: colorScheme.onSurfaceVariant, fontSize: 12)),
-            ),
             const SizedBox(height: 24),
+
+            // Emoji
+            TextField(
+              controller: _emojiController,
+              decoration: const InputDecoration(
+                labelText: 'Emoji',
+                hintText: '🛍️',
+              ),
+              maxLength: 2,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
 
             // Nome
             TextFormField(
               controller: _nameController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Nome da lista',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                hintText: 'Ex: Roupas, Eletrônicos...',
               ),
               textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) => setState(() {}),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Informe um nome' : null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // Cor
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Cor'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(backgroundColor: _color, radius: 16),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.chevron_right),
-                ],
+            Text('Cor da pasta', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 8,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
               ),
-              onTap: _pickColor,
+              itemCount: _kCollectionColors.length,
+              itemBuilder: (context, index) {
+                final color = _kCollectionColors[index];
+                final isSelected =
+                    _selectedColor.toARGB32() == color.toARGB32();
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedColor = color),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: isSelected
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 3)
+                          : Border.all(color: Colors.grey.shade300, width: 1),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.4),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: isSelected
+                        ? Icon(Icons.check,
+                            size: 16,
+                            color: color.computeLuminance() > 0.7
+                                ? Colors.black
+                                : Colors.white)
+                        : null,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 32),
 
@@ -186,30 +249,6 @@ class _CreateSharedCollectionPageState
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _pickEmoji() {
-    const emojis = [
-      '🛍️','🎁','👗','💄','👟','📱','💻','🏠','🛋️','🎮',
-      '📚','🍕','✈️','💍','🎵','🌸','⚽','🧸','🎨','🏋️',
-    ];
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => GridView.count(
-        crossAxisCount: 6,
-        padding: const EdgeInsets.all(16),
-        children: emojis
-            .map((e) => GestureDetector(
-                  onTap: () {
-                    setState(() => _emoji = e);
-                    Navigator.pop(context);
-                  },
-                  child: Center(
-                      child: Text(e, style: const TextStyle(fontSize: 28))),
-                ))
-            .toList(),
       ),
     );
   }

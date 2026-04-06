@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/collections/domain/entities/collection.dart';
 import '../../features/collections/presentation/pages/home_page.dart';
 import '../../features/collections/presentation/pages/collection_detail_page.dart';
 import '../../features/collections/presentation/pages/create_edit_collection_page.dart';
@@ -39,7 +40,13 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
         path: AppRoutes.collectionDetail,
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return CollectionDetailPage(collectionId: id);
+          final extra = state.extra;
+          final initialCollection =
+              extra is Collection ? extra : null;
+          return CollectionDetailPage(
+            collectionId: id,
+            initialCollection: initialCollection,
+          );
         },
         routes: [
           GoRoute(

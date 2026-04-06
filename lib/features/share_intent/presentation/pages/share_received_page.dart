@@ -145,7 +145,16 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final collectionsAsync = ref.watch(collectionsStreamProvider);
+    final localAsync = ref.watch(collectionsStreamProvider);
+    final sharedAsync = ref.watch(sharedCollectionsStreamProvider);
+
+    // Mescla locais + compartilhadas numa única AsyncValue
+    final collectionsAsync = localAsync.whenData(
+      (local) => [
+        ...local,
+        ...(sharedAsync.valueOrNull ?? []),
+      ],
+    );
 
     return Padding(
       padding: EdgeInsets.only(

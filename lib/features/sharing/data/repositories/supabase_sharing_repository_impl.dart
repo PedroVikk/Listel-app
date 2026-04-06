@@ -100,18 +100,33 @@ class SupabaseSharingRepositoryImpl implements SharingRepository {
 
   @override
   Future<List<CollectionMember>> getMembers(String collectionRemoteId) async {
-    final rows = await _client
+    final memberRows = await _client
         .from('collection_members')
-        .select('user_id, role, profiles(display_name)')
+        .select('user_id, role')
         .eq('collection_id', collectionRemoteId);
 
-    return (rows as List).map((r) {
-      final profile = r['profiles'] as Map<String, dynamic>?;
+    final members = memberRows as List;
+    if (members.isEmpty) return [];
+
+    final userIds = members.map((r) => r['user_id'] as String).toList();
+
+    final profileRows = await _client
+        .from('profiles')
+        .select('id, display_name')
+        .inFilter('id', userIds);
+
+    final profileMap = <String, String>{
+      for (final p in profileRows as List)
+        p['id'] as String: (p['display_name'] as String?) ?? 'Usuário',
+    };
+
+    return members.map((r) {
+      final userId = r['user_id'] as String;
       return CollectionMember(
-        userId: r['user_id'] as String,
+        userId: userId,
         collectionId: collectionRemoteId,
         role: r['role'] == 'owner' ? MemberRole.owner : MemberRole.member,
-        displayName: profile?['display_name'] as String? ?? 'Usuário',
+        displayName: profileMap[userId] ?? 'Usuário',
       );
     }).toList();
   }

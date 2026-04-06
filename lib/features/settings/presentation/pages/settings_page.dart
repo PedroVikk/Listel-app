@@ -115,14 +115,14 @@ class SettingsPage extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Text('💌', style: const TextStyle(fontSize: 28)),
+                  Text('', style: const TextStyle(fontSize: 28)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Feito com amor',
+                          'O Seu app de listas de desejos',
                           style: Theme.of(context)
                               .textTheme
                               .labelLarge
@@ -135,7 +135,7 @@ class SettingsPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'De Pedro Victor para Inês Gomides 🌸',
+                          'Feito por Pedro Victor, Pensado por Ines Gomides',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

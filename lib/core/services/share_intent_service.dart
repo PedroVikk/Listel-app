@@ -67,14 +67,18 @@ class ShareIntentService {
 
   String? _inferStore(String text) {
     final lower = text.toLowerCase();
-    if (lower.contains('shopee')) return 'Shopee';
-    if (lower.contains('shein')) return 'Shein';
-    if (lower.contains('mercadolivre') || lower.contains('mercadolibre')) return 'Mercado Livre';
-    if (lower.contains('amazon')) return 'Amazon';
-    if (lower.contains('aliexpress')) return 'AliExpress';
-    if (lower.contains('magalu') || lower.contains('magazineluiza')) return 'Magazine Luiza';
-    if (lower.contains('americanas')) return 'Americanas';
-    if (lower.contains('submarino')) return 'Submarino';
+    if (lower.contains('shopee')) return '🛒 Shopee';
+    if (lower.contains('shein')) return '🧧 Shein';
+    if (lower.contains('mercadolivre') || lower.contains('mercadolibre')) return '🛍️ Mercado Livre';
+    if (lower.contains('amazon')) return '📦 Amazon';
+    if (lower.contains('aliexpress')) return '🌏 AliExpress';
+    if (lower.contains('magalu') || lower.contains('magazineluiza')) return '🏪 Magazine Luiza';
+    if (lower.contains('americanas')) return '🏬 Americanas';
+    if (lower.contains('submarino')) return '🚀 Submarino';
+    if (lower.contains('netshoes')) return '👟 Netshoes';
+    if (lower.contains('zara')) return '👗 Zara';
+    if (lower.contains('renner')) return '🧥 Renner';
+    if (lower.contains('hering')) return '👕 Hering';
     return null;
   }
 }

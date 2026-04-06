@@ -41,20 +41,81 @@ class MetadataExtractorService {
       final response = await http
           .get(Uri.parse(url), headers: _headers)
           .timeout(_timeout);
-      if (response.statusCode != 200) return const ProductMetadata();
+      if (response.statusCode != 200) {
+        return ProductMetadata(title: _titleFromSlug(url));
+      }
 
       // Rejeita respostas muito grandes
       final contentLen = response.contentLength ?? response.bodyBytes.length;
-      if (contentLen > _maxBodyBytes) return const ProductMetadata();
+      if (contentLen > _maxBodyBytes) {
+        return ProductMetadata(title: _titleFromSlug(url));
+      }
 
       final body = response.body;
       final trimmed = body.length > _maxBodyChars
           ? body.substring(0, _maxBodyChars)
           : body;
-      return _parseHtml(trimmed);
+      final meta = _parseHtml(trimmed);
+      // Se os OG tags não trouxeram título, tenta extrair do slug da URL
+      if (meta.isEmpty) return ProductMetadata(title: _titleFromSlug(url));
+      if (meta.title == null || meta.title!.isEmpty) {
+        return ProductMetadata(
+          title: _titleFromSlug(url),
+          imageUrl: meta.imageUrl,
+          price: meta.price,
+          siteName: meta.siteName,
+        );
+      }
+      return meta;
     } catch (_) {
-      return const ProductMetadata();
+      return ProductMetadata(title: _titleFromSlug(url));
     }
+  }
+
+  /// Tenta extrair o nome do produto diretamente do slug da URL.
+  /// Funciona como fallback para Shein, Amazon, Shopee, Mercado Livre, etc.
+  String? _titleFromSlug(String urlStr) {
+    final uri = Uri.tryParse(urlStr);
+    if (uri == null) return null;
+
+    // Segmentos a ignorar (não são nomes de produto)
+    const skip = {
+      'p', 'dp', 'cp', 'sp', 'gp', 'item', 'produto', 'product', 'products',
+      'shop', 'shopping', 'categoria', 'category', 'categories', 'search',
+      'ref', 'ml', 'mlb', 'pd', 'pi', 'ls', 'listing',
+    };
+
+    for (final seg in uri.pathSegments) {
+      // Remove extensão de arquivo (.html, .htm, etc.)
+      final clean =
+          seg.replaceAll(RegExp(r'\.[a-z]{2,5}$', caseSensitive: false), '');
+
+      if (clean.length < 6) continue;
+      if (skip.contains(clean.toLowerCase())) continue;
+
+      // Descarta segmentos que são puramente numéricos ou IDs (ex: B08XXXXX, skuid-12345)
+      if (RegExp(r'^[0-9\-_]+$').hasMatch(clean)) continue;
+      if (RegExp(r'^[A-Z0-9]{8,}$').hasMatch(clean)) continue;
+
+      // Precisa ter letras
+      if (!RegExp(r'[a-zA-ZÀ-ÿ]').hasMatch(clean)) continue;
+
+      // Converte slug para título
+      final words = clean
+          .replaceAll(RegExp(r'[-_]+'), ' ')
+          .split(' ')
+          .where((w) => w.isNotEmpty)
+          // Remove tokens puramente numéricos (ids no final, ex: Shopee "i.12345.67890")
+          .where((w) => !RegExp(r'^\d+$').hasMatch(w))
+          .toList();
+
+      if (words.length < 2) continue;
+
+      return words
+          .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+          .join(' ');
+    }
+    return null;
   }
 
   String? _extractUrl(String raw) {

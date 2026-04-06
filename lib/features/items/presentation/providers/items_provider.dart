@@ -34,9 +34,21 @@ final itemsByCollectionProvider =
 });
 
 class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
+  /// Retorna o repositório correto: remoto se a coleção for compartilhada, local caso contrário.
+  ItemsRepository get _repo {
+    final isShared = ref.read(_collectionIsSharedProvider(arg));
+    return isShared
+        ? ref.read(remoteItemsRepositoryProvider)
+        : ref.read(itemsRepositoryProvider);
+  }
+
   @override
   Future<List<SavedItem>> build(String collectionId) async {
-    return ref.watch(itemsRepositoryProvider).getByCollection(collectionId);
+    final isShared = ref.watch(_collectionIsSharedProvider(collectionId));
+    final repo = isShared
+        ? ref.watch(remoteItemsRepositoryProvider)
+        : ref.watch(itemsRepositoryProvider);
+    return repo.getByCollection(collectionId);
   }
 
   Future<void> createFromShare({
@@ -63,7 +75,7 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       createdAt: now,
       updatedAt: now,
     );
-    await ref.read(itemsRepositoryProvider).save(item);
+    await _repo.save(item);
     ref.invalidateSelf();
   }
 
@@ -87,7 +99,7 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       createdAt: now,
       updatedAt: now,
     );
-    await ref.read(itemsRepositoryProvider).save(item);
+    await _repo.save(item);
     ref.invalidateSelf();
   }
 
@@ -96,12 +108,12 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       status: item.isPurchased ? ItemStatus.pending : ItemStatus.purchased,
       updatedAt: DateTime.now(),
     );
-    await ref.read(itemsRepositoryProvider).save(updated);
+    await _repo.save(updated);
     ref.invalidateSelf();
   }
 
   Future<void> delete(String id) async {
-    await ref.read(itemsRepositoryProvider).delete(id);
+    await _repo.delete(id);
     ref.invalidateSelf();
   }
 }
