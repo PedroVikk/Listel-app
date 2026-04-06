@@ -7,10 +7,19 @@ import 'package:share_plus/share_plus.dart';
 import '../providers/collections_provider.dart';
 import '../../../items/domain/entities/saved_item.dart';
 import '../../../items/presentation/providers/items_provider.dart';
+import '../../../sharing/presentation/pages/invite_page.dart';
 
 class CollectionDetailPage extends ConsumerWidget {
   final String collectionId;
   const CollectionDetailPage({super.key, required this.collectionId});
+
+  Widget? _itemSubtitle(SavedItem item) {
+    final parts = <String>[];
+    if (item.price != null) parts.add('R\$ ${item.price!.toStringAsFixed(2)}');
+    if (item.addedBy != null) parts.add('por ${item.addedBy}');
+    if (parts.isEmpty) return null;
+    return Text(parts.join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis);
+  }
 
   void _shareList(
       BuildContext context, String collectionName, List<SavedItem> items) {
@@ -48,7 +57,7 @@ class CollectionDetailPage extends ConsumerWidget {
       writeItems(purchased);
     }
 
-    SharePlus.instance.share(ShareParams(text: buffer.toString().trim()));
+    Share.share(buffer.toString().trim());
   }
 
   @override
@@ -56,14 +65,34 @@ class CollectionDetailPage extends ConsumerWidget {
     final collectionsAsync = ref.watch(collectionsStreamProvider);
     final itemsAsync = ref.watch(itemsByCollectionProvider(collectionId));
 
-    final collection = collectionsAsync.valueOrNull
-        ?.where((c) => c.id == collectionId)
-        .firstOrNull;
+    // Procura primeiro nas locais, depois nas compartilhadas
+    final local = collectionsAsync.valueOrNull ?? [];
+    final shared = ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
+    final collection = local.where((c) => c.id == collectionId).firstOrNull ??
+        shared
+            .where((c) => c.remoteId == collectionId || c.id == collectionId)
+            .firstOrNull;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(collection?.name ?? ''),
         actions: [
+          // Botão de convite apenas em listas compartilhadas
+          if (collection?.isShared == true && collection?.inviteCode != null)
+            IconButton(
+              icon: const Icon(Icons.person_add_outlined),
+              tooltip: 'Convidar',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => InvitePage(
+                    collectionRemoteId: collection!.remoteId!,
+                    collectionName: collection.name,
+                    inviteCode: collection.inviteCode!,
+                  ),
+                ),
+              ),
+            ),
           if (itemsAsync.valueOrNull?.isNotEmpty == true)
             IconButton(
               icon: const Icon(Icons.share_outlined),
@@ -74,10 +103,11 @@ class CollectionDetailPage extends ConsumerWidget {
                 itemsAsync.valueOrNull ?? [],
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => context.push('/collection/$collectionId/edit'),
-          ),
+          if (collection?.isShared != true)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => context.push('/collection/$collectionId/edit'),
+            ),
         ],
       ),
       body: itemsAsync.when(
@@ -136,9 +166,7 @@ class CollectionDetailPage extends ConsumerWidget {
                   ),
                   title: Text(item.name,
                       maxLines: 2, overflow: TextOverflow.ellipsis),
-                  subtitle: item.price != null
-                      ? Text('R\$ ${item.price!.toStringAsFixed(2)}')
-                      : null,
+                  subtitle: _itemSubtitle(item),
                   trailing: IconButton(
                     icon: Icon(
                       item.isPurchased

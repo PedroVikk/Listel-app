@@ -54,3 +54,6 @@ guia
 android/key.properties
 android/*.jks
 android/*.keystore
+
+# Credenciais Supabase — NUNCA commitar
+lib/core/config/app_config.dart

@@ -52,8 +52,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.10+1
 
-  # Future: Supabase (integrar na v2)
-  # supabase_flutter: ^2.x.x
+  # Supabase (auth + realtime + postgres)
+  supabase_flutter: ^2.8.4
+
+  # Deep links (fluxo de convite)
+  app_links: ^6.4.0
 
 dev_dependencies:
   flutter_test:

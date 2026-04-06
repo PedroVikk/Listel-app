@@ -37,13 +37,28 @@ const CollectionModelSchema = CollectionSchema(
       name: r'id',
       type: IsarType.string,
     ),
-    r'name': PropertySchema(
+    r'inviteCode': PropertySchema(
       id: 4,
+      name: r'inviteCode',
+      type: IsarType.string,
+    ),
+    r'isShared': PropertySchema(
+      id: 5,
+      name: r'isShared',
+      type: IsarType.bool,
+    ),
+    r'name': PropertySchema(
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
+    r'remoteId': PropertySchema(
+      id: 7,
+      name: r'remoteId',
+      type: IsarType.string,
+    ),
     r'updatedAt': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -89,7 +104,19 @@ int _collectionModelEstimateSize(
     }
   }
   bytesCount += 3 + object.id.length * 3;
+  {
+    final value = object.inviteCode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
+  {
+    final value = object.remoteId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -103,8 +130,11 @@ void _collectionModelSerialize(
   writer.writeDateTime(offsets[1], object.createdAt);
   writer.writeString(offsets[2], object.emoji);
   writer.writeString(offsets[3], object.id);
-  writer.writeString(offsets[4], object.name);
-  writer.writeDateTime(offsets[5], object.updatedAt);
+  writer.writeString(offsets[4], object.inviteCode);
+  writer.writeBool(offsets[5], object.isShared);
+  writer.writeString(offsets[6], object.name);
+  writer.writeString(offsets[7], object.remoteId);
+  writer.writeDateTime(offsets[8], object.updatedAt);
 }
 
 CollectionModel _collectionModelDeserialize(
@@ -118,9 +148,12 @@ CollectionModel _collectionModelDeserialize(
   object.createdAt = reader.readDateTime(offsets[1]);
   object.emoji = reader.readStringOrNull(offsets[2]);
   object.id = reader.readString(offsets[3]);
+  object.inviteCode = reader.readStringOrNull(offsets[4]);
+  object.isShared = reader.readBool(offsets[5]);
   object.isarId = id;
-  object.name = reader.readString(offsets[4]);
-  object.updatedAt = reader.readDateTime(offsets[5]);
+  object.name = reader.readString(offsets[6]);
+  object.remoteId = reader.readStringOrNull(offsets[7]);
+  object.updatedAt = reader.readDateTime(offsets[8]);
   return object;
 }
 
@@ -140,8 +173,14 @@ P _collectionModelDeserializeProp<P>(
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
+      return (reader.readBool(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readStringOrNull(offset)) as P;
+    case 8:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -746,6 +785,170 @@ extension CollectionModelQueryFilter
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'inviteCode',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'inviteCode',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'inviteCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'inviteCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'inviteCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'inviteCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'inviteCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'inviteCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'inviteCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'inviteCode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'inviteCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      inviteCodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'inviteCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      isSharedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isShared',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -938,6 +1141,160 @@ extension CollectionModelQueryFilter
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'remoteId',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'remoteId',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'remoteId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'remoteId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      remoteIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
       updatedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1055,6 +1412,34 @@ extension CollectionModelQuerySortBy
     });
   }
 
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByInviteCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'inviteCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByInviteCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'inviteCode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByIsShared() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isShared', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByIsSharedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isShared', Sort.desc);
+    });
+  }
+
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1065,6 +1450,20 @@ extension CollectionModelQuerySortBy
       sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.desc);
     });
   }
 
@@ -1138,6 +1537,34 @@ extension CollectionModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByInviteCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'inviteCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByInviteCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'inviteCode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByIsShared() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isShared', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByIsSharedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isShared', Sort.desc);
+    });
+  }
+
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -1161,6 +1588,20 @@ extension CollectionModelQuerySortThenBy
       thenByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.desc);
     });
   }
 
@@ -1209,10 +1650,31 @@ extension CollectionModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct>
+      distinctByInviteCode({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'inviteCode', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct>
+      distinctByIsShared() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isShared');
+    });
+  }
+
   QueryBuilder<CollectionModel, CollectionModel, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct> distinctByRemoteId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
     });
   }
 
@@ -1257,9 +1719,28 @@ extension CollectionModelQueryProperty
     });
   }
 
+  QueryBuilder<CollectionModel, String?, QQueryOperations>
+      inviteCodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'inviteCode');
+    });
+  }
+
+  QueryBuilder<CollectionModel, bool, QQueryOperations> isSharedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isShared');
+    });
+  }
+
   QueryBuilder<CollectionModel, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<CollectionModel, String?, QQueryOperations> remoteIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'remoteId');
     });
   }
 

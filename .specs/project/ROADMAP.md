@@ -37,15 +37,53 @@
 
 ---
 
-## v2 — Expansão Social e Notificações
+## v2 — Lista Compartilhada em Tempo Real (próxima feature)
+
+_Ver guia completo: [SHARED_LIST_FEATURE.md](./SHARED_LIST_FEATURE.md)_
+
+### Fase 1 — Supabase + Auth
+- [ ] Adicionar `supabase_flutter` + `app_links` ao pubspec
+- [ ] `SupabaseService` singleton + `Supabase.initialize()` em main
+- [ ] Schema SQL no Supabase (profiles, shared_collections, collection_members, shared_items + RLS)
+- [ ] Módulo `features/auth/` completo (LoginPage, AuthRepository, authStateProvider)
+- [ ] Rota `/auth/login` + redirect no go_router
+
+### Fase 2 — Extensão de Entidades (non-breaking)
+- [ ] `Collection` + `isShared`, `remoteId`, `inviteCode`
+- [ ] `SavedItem` + `addedBy`, `purchasedBy`
+- [ ] Atualizar models Isar + rodar build_runner
+
+### Fase 3 — Repositórios Remotos
+- [ ] `RemoteCollectionsRepositoryImpl` (Supabase Realtime)
+- [ ] `RemoteItemsRepositoryImpl` (Postgres Changes stream)
+- [ ] `SharingRepository` + implementação Supabase
+
+### Fase 4 — Provider Wiring + UI
+- [ ] `collectionScopeProvider` (roteamento local vs remoto)
+- [ ] `HomePage` com seção de listas compartilhadas
+- [ ] Módulo `features/sharing/` (4 páginas: create, invite, join, members)
+- [ ] Novas rotas no router
+
+### Fase 5 — Fluxo de Convite por Deep Link
+- [ ] Scheme `wishnesita://` no AndroidManifest
+- [ ] Handler de cold/hot start com `app_links`
+- [ ] `JoinCollectionPage` com auto-submit por query param
+
+### Fase 6 — UX em Tempo Real (polish)
+- [ ] Banner de offline
+- [ ] Atualizações otimistas no toggleStatus
+- [ ] Badge "Adicionado por X" nos itens
+
+### Fase 7 — Configurações de Conta
+- [ ] Seção de conta na SettingsPage
+- [ ] Botão "Excluir conta" (Edge Function — obrigatório App Store)
+
+---
+
+## v3 — Notificações e Backend Avançado
 
 - [ ] Compartilhar pasta com amigos (link ou QR code)
 - [ ] Lembretes e notificações (ex: "você tem X itens pendentes")
 - [ ] Notificação de queda de preço (requer backend)
-
-## v3 — Backend e Sincronização
-
-- [ ] Autenticação de usuário
-- [ ] Sincronização na nuvem
 - [ ] Backup e restauração
 - [ ] Detecção automática de metadados de produto (scraping / OpenGraph)

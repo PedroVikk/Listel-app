@@ -16,6 +16,11 @@ class CollectionModel {
   late DateTime createdAt;
   late DateTime updatedAt;
 
+  // Campos de lista compartilhada — nullable/default → migração automática pelo Isar
+  bool isShared = false;
+  String? remoteId;
+  String? inviteCode;
+
   Collection toDomain() => Collection(
         id: id,
         name: name,
@@ -23,6 +28,9 @@ class CollectionModel {
         colorValue: colorValue,
         createdAt: createdAt,
         updatedAt: updatedAt,
+        isShared: isShared,
+        remoteId: remoteId,
+        inviteCode: inviteCode,
       );
 
   static CollectionModel fromDomain(Collection entity) => CollectionModel()
@@ -31,5 +39,8 @@ class CollectionModel {
     ..emoji = entity.emoji
     ..colorValue = entity.colorValue
     ..createdAt = entity.createdAt
-    ..updatedAt = entity.updatedAt;
+    ..updatedAt = entity.updatedAt
+    ..isShared = entity.isShared
+    ..remoteId = entity.remoteId
+    ..inviteCode = entity.inviteCode;
 }
