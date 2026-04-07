@@ -156,7 +156,7 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
       ],
     );
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),

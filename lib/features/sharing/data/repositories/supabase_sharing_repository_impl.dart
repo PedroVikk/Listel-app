@@ -88,12 +88,18 @@ class SupabaseSharingRepositoryImpl implements SharingRepository {
 
     final collectionId = row['id'] as String;
 
-    // Upsert — idempotente se já for membro
-    await _client.from('collection_members').upsert({
-      'collection_id': collectionId,
-      'user_id': userId,
-      'role': 'member',
-    });
+    // Insert — idempotente: ignora erro 23505 (já é membro)
+    // Não usamos upsert porque o ON CONFLICT DO UPDATE aciona a policy USING
+    // (SELECT) do RLS, que bloqueia quando o usuário ainda não é membro.
+    try {
+      await _client.from('collection_members').insert({
+        'collection_id': collectionId,
+        'user_id': userId,
+        'role': 'member',
+      });
+    } on PostgrestException catch (e) {
+      if (e.code != '23505') rethrow; // 23505 = unique violation (já membro)
+    }
 
     return SharedCollectionDto.fromJson(row);
   }

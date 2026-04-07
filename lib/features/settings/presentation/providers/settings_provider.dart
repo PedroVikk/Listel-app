@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/theme_settings.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../domain/repositories/settings_repository.dart';
+import '../../../../core/services/app_icon_service.dart';
 
 final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => SettingsRepositoryImpl(),
@@ -34,4 +35,20 @@ class ThemeSettingsNotifier extends AsyncNotifier<ThemeSettings> {
 final themeSettingsProvider =
     AsyncNotifierProvider<ThemeSettingsNotifier, ThemeSettings>(
   ThemeSettingsNotifier.new,
+);
+
+// ── Ícone do launcher ────────────────────────────────────────────────────────
+
+class AppIconNotifier extends AsyncNotifier<String> {
+  @override
+  Future<String> build() => AppIconService.getActiveIcon();
+
+  Future<void> setIcon(String iconId) async {
+    await AppIconService.setIcon(iconId);
+    state = AsyncData(iconId);
+  }
+}
+
+final appIconProvider = AsyncNotifierProvider<AppIconNotifier, String>(
+  AppIconNotifier.new,
 );

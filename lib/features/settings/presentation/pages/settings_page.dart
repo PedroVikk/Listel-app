@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../providers/settings_provider.dart';
+import '../../../../core/services/app_icon_service.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -103,6 +104,13 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
+            Text('Ícone do app',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    )),
+            const SizedBox(height: 12),
+            _appIconPicker(),
+            const SizedBox(height: 32),
             // Dedicatória
             Container(
               padding: const EdgeInsets.all(16),
@@ -156,6 +164,83 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _appIconPicker() => Consumer(
+        builder: (context, ref, _) {
+          final iconAsync = ref.watch(appIconProvider);
+          final activeId = iconAsync.valueOrNull ?? 'default';
+
+          // Cores de fundo do preview — espelham o bg real de cada mipmap
+          final previewColors = {
+            'default': const Color(0xFFFFFFFF),
+            'pink':    const Color(0xFFFFE4F2),
+            'dark':    const Color(0xFF1A1A2E),
+          };
+
+          return SizedBox(
+            height: 96,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: AppIconVariant.all.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, i) {
+                final variant = AppIconVariant.all[i];
+                final isSelected = variant.id == activeId;
+                final color = previewColors[variant.id] ?? const Color(0xFFE91E8C);
+
+                return GestureDetector(
+                  onTap: () => ref.read(appIconProvider.notifier).setIcon(variant.id),
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(16),
+                          border: isSelected
+                              ? Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 3,
+                                )
+                              : Border.all(color: Colors.transparent, width: 3),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Image.asset(
+                            'assets/icons/app_icon.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        variant.label,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: isSelected ? FontWeight.bold : null,
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
 
   void _pickColor(BuildContext context, WidgetRef ref, Color current) {
     Color picked = current;

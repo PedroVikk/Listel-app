@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/collections_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../collections/domain/entities/collection.dart';
+import '../../../sharing/presentation/providers/sharing_provider.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -288,7 +289,7 @@ class _CollectionGrid extends StatelessWidget {
   }
 }
 
-class _CollectionCard extends StatelessWidget {
+class _CollectionCard extends ConsumerWidget {
   final Collection collection;
   final String navId;
   final bool isShared;
@@ -299,8 +300,46 @@ class _CollectionCard extends StatelessWidget {
     required this.isShared,
   });
 
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isShared ? 'Remover lista' : 'Excluir lista'),
+        content: Text(
+          isShared
+              ? 'Se você for o dono, a lista será excluída para todos os membros. Caso contrário, você apenas sairá dela.'
+              : 'Tem certeza? Todos os itens da lista serão excluídos permanentemente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(isShared ? 'Remover' : 'Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    if (isShared) {
+      final remoteId = collection.remoteId;
+      if (remoteId == null) return;
+      await ref.read(sharingNotifierProvider.notifier).leaveCollection(remoteId);
+    } else {
+      await ref.read(collectionsNotifierProvider.notifier).delete(collection.id);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = Color(collection.colorValue);
     final lum = color.computeLuminance();
     final isVeryDark = lum < 0.05;
@@ -311,6 +350,7 @@ class _CollectionCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () => context.push('/collection/$navId'),
+        onLongPress: () => _confirmDelete(context, ref),
         borderRadius: BorderRadius.circular(16),
         child: Ink(
           decoration: BoxDecoration(

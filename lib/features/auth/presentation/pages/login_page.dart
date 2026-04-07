@@ -51,24 +51,36 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       }
 
-      if (mounted) {
-        context.go(widget.redirectTo ?? '/');
-      }
+      if (mounted) context.go(widget.redirectTo ?? '/');
     } on AuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+      if (!mounted) return;
+      // Mensagem de confirmação de e-mail não é erro — exibe como info.
+      final isInfo = e.message.startsWith('Cadastro realizado!');
+      _showMessage(e.message, isError: !isInfo);
+      if (isInfo) {
+        setState(() {
+          _isSignUp = false;
+          _formKey.currentState?.reset();
+        });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro inesperado. Tente novamente.')),
-        );
-      }
+      if (mounted) _showMessage('Erro inesperado. Tente novamente.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _showMessage(String text, {bool isError = true}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor:
+            isError ? colorScheme.error : colorScheme.primaryContainer,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override

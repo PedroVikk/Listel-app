@@ -25,7 +25,10 @@ class ItemsRepositoryImpl implements ItemsRepository {
 
   @override
   Future<void> save(SavedItem item) async {
+    final existing =
+        await _db.savedItemModels.where().idEqualTo(item.id).findFirst();
     final model = SavedItemModel.fromDomain(item);
+    if (existing != null) model.isarId = existing.isarId;
     await _db.writeTxn(() => _db.savedItemModels.put(model));
   }
 

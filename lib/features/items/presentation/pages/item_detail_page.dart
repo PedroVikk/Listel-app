@@ -5,18 +5,28 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/items_provider.dart';
 import '../../domain/entities/saved_item.dart';
+import '../../../collections/presentation/providers/collections_provider.dart';
+import '../../../collections/domain/entities/collection.dart';
 
-// Provider que observa o item por id via stream — atualiza automaticamente
+// Provider que observa o item por id via stream — tenta local primeiro, depois remoto
 final _itemByIdProvider = StreamProvider.family<SavedItem?, String>((ref, id) {
-  final repo = ref.watch(itemsRepositoryProvider);
-  // Busca o item e atualiza quando o repo muda
-  return Stream.fromFuture(repo.getById(id)).asyncExpand(
-    (item) => item == null
-        ? Stream.value(null)
-        : repo
-            .watchByCollection(item.collectionId)
-            .map((items) => items.where((i) => i.id == id).firstOrNull),
-  );
+  final localRepo = ref.watch(itemsRepositoryProvider);
+  final remoteRepo = ref.watch(remoteItemsRepositoryProvider);
+
+  return Stream.fromFuture(localRepo.getById(id)).asyncExpand((localItem) {
+    if (localItem != null) {
+      return localRepo
+          .watchByCollection(localItem.collectionId)
+          .map((items) => items.where((i) => i.id == id).firstOrNull);
+    }
+    // Não encontrado localmente — tenta no Supabase
+    return Stream.fromFuture(remoteRepo.getById(id)).asyncExpand((remoteItem) {
+      if (remoteItem == null) return Stream.value(null);
+      return remoteRepo
+          .watchByCollection(remoteItem.collectionId)
+          .map((items) => items.where((i) => i.id == id).firstOrNull);
+    });
+  });
 });
 
 class ItemDetailPage extends ConsumerWidget {
@@ -198,6 +208,72 @@ class ItemDetailPage extends ConsumerWidget {
                       )
                     : null,
               ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    _showMoveBottomSheet(context, ref, item),
+                icon: const Icon(Icons.drive_file_move_outlined),
+                label: const Text('Mover para outra lista'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showMoveBottomSheet(
+      BuildContext context, WidgetRef ref, SavedItem item) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Consumer(
+        builder: (context, ref, _) {
+          final local =
+              ref.watch(collectionsStreamProvider).valueOrNull ?? [];
+          final shared =
+              ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
+          final available = [...local, ...shared]
+              .where((c) =>
+                  c.id != item.collectionId &&
+                  c.remoteId != item.collectionId)
+              .toList();
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text('Mover para',
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+              if (available.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Nenhuma outra lista disponível.'),
+                )
+              else
+                ...available.map((c) => ListTile(
+                      leading: c.emoji != null
+                          ? Text(c.emoji!,
+                              style: const TextStyle(fontSize: 24))
+                          : const Icon(Icons.folder_outlined),
+                      title: Text(c.name),
+                      trailing: c.isShared
+                          ? const Icon(Icons.people_outline, size: 16)
+                          : null,
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        final targetId = c.isShared
+                            ? (c.remoteId ?? c.id)
+                            : c.id;
+                        await ref
+                            .read(itemsNotifierProvider(item.collectionId)
+                                .notifier)
+                            .moveToCollection(item, targetId);
+                        if (context.mounted) context.pop();
+                      },
+                    )),
+              const SizedBox(height: 16),
             ],
           );
         },

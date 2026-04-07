@@ -41,7 +41,7 @@ class _JoinCollectionPageState extends ConsumerState<JoinCollectionPage> {
           .joinByInviteCode(_controller.text.trim());
 
       if (mounted) {
-        context.go('/collection/${collection.remoteId}');
+        context.pushReplacement('/collection/${collection.remoteId}');
       }
     } catch (e) {
       if (mounted) {
@@ -59,7 +59,7 @@ class _JoinCollectionPageState extends ConsumerState<JoinCollectionPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Entrar em uma lista')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,

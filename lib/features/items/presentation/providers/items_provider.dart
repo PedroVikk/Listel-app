@@ -116,6 +116,22 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
     await _repo.delete(id);
     ref.invalidateSelf();
   }
+
+  Future<void> moveToCollection(
+      SavedItem item, String targetCollectionId) async {
+    final updated = item.copyWith(
+      collectionId: targetCollectionId,
+      updatedAt: DateTime.now(),
+    );
+    final targetIsShared =
+        ref.read(_collectionIsSharedProvider(targetCollectionId));
+    final targetRepo = targetIsShared
+        ? ref.read(remoteItemsRepositoryProvider)
+        : ref.read(itemsRepositoryProvider);
+    await _repo.delete(item.id);
+    await targetRepo.save(updated);
+    ref.invalidateSelf();
+  }
 }
 
 final itemsNotifierProvider =

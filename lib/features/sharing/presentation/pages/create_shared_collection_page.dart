@@ -66,10 +66,9 @@ class _CreateSharedCollectionPageState
           );
 
       if (mounted) {
-        context.pushReplacement(
-          '/collection/${collection.remoteId}',
-          extra: collection,
-        );
+        final path = '/collection/${collection.remoteId}';
+        context.pop();
+        context.push(path, extra: collection);
       }
     } catch (e, st) {
       debugPrint('ERRO ao criar lista compartilhada: $e\n$st');
