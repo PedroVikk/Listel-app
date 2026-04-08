@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/sharing_provider.dart';
 
 const _kCollectionColors = [
@@ -42,27 +46,107 @@ class _CreateSharedCollectionPageState
     extends ConsumerState<CreateSharedCollectionPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emojiController = TextEditingController();
   Color _selectedColor = _kCollectionColors.first;
+  String? _coverImagePath;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _emojiController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: source);
+    if (picked == null || !mounted) return;
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Ajustar foto de capa',
+          toolbarColor: colorScheme.surface,
+          toolbarWidgetColor: colorScheme.onSurface,
+          backgroundColor: Colors.black,
+          activeControlsWidgetColor: colorScheme.primary,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+      ],
+    );
+    if (cropped == null || !mounted) return;
+
+    final docsDir = await getApplicationDocumentsDirectory();
+    final coversDir = Directory('${docsDir.path}/collection_covers');
+    await coversDir.create(recursive: true);
+
+    final srcPath = cropped.path;
+    final dotIndex = srcPath.lastIndexOf('.');
+    final ext = dotIndex != -1 ? srcPath.substring(dotIndex) : '.jpg';
+    final fileName = 'cover_${DateTime.now().millisecondsSinceEpoch}$ext';
+    final destPath = '${coversDir.path}/$fileName';
+    await File(srcPath).copy(destPath);
+
+    if (_coverImagePath != null && _coverImagePath != destPath) {
+      final old = File(_coverImagePath!);
+      if (await old.exists()) await old.delete();
+    }
+
+    setState(() => _coverImagePath = destPath);
+  }
+
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Tirar foto'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            if (_coverImagePath != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline,
+                    color: Theme.of(ctx).colorScheme.error),
+                title: Text('Remover foto',
+                    style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() => _coverImagePath = null);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _submit() async {
     try {
       if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      final emoji = _emojiController.text.trim();
       final collection = await ref
           .read(sharingNotifierProvider.notifier)
           .createSharedCollection(
             name: _nameController.text.trim(),
-            emoji: emoji.isEmpty ? null : emoji,
             colorValue: _selectedColor.toARGB32(),
+            coverImagePath: _coverImagePath,
           );
 
       if (mounted) {
@@ -118,51 +202,16 @@ class _CreateSharedCollectionPageState
             ),
             const SizedBox(height: 24),
 
-            // Preview
-            Text('Visualização', style: Theme.of(context).textTheme.labelLarge),
+            // Foto de capa
+            Text('Foto de capa', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: _selectedColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: _selectedColor.withValues(alpha: 0.4), width: 2),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Text(
-                    _emojiController.text.isEmpty
-                        ? 'Use um Emoji'
-                        : _emojiController.text,
-                    style: const TextStyle(fontSize: 36),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _nameController.text.isEmpty
-                          ? 'Nome da lista'
-                          : _nameController.text,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                ],
-              ),
+            _CoverPhotoPicker(
+              coverImagePath: _coverImagePath,
+              collectionName: _nameController.text,
+              color: _selectedColor,
+              onTap: _showImageSourceSheet,
             ),
             const SizedBox(height: 24),
-
-            // Emoji
-            TextField(
-              controller: _emojiController,
-              decoration: const InputDecoration(
-                labelText: 'Emoji',
-                hintText: '🛍️',
-              ),
-              maxLength: 2,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
 
             // Nome
             TextFormField(
@@ -179,7 +228,7 @@ class _CreateSharedCollectionPageState
             const SizedBox(height: 24),
 
             // Cor
-            Text('Cor da pasta', style: Theme.of(context).textTheme.labelLarge),
+            Text('Cor de fundo', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 12),
             GridView.builder(
               shrinkWrap: true,
@@ -202,17 +251,12 @@ class _CreateSharedCollectionPageState
                       color: color,
                       shape: BoxShape.circle,
                       border: isSelected
-                          ? Border.all(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 3)
+                          ? Border.all(color: colorScheme.primary, width: 3)
                           : Border.all(color: Colors.grey.shade300, width: 1),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.4),
+                                color: colorScheme.primary.withValues(alpha: 0.4),
                                 blurRadius: 6,
                                 spreadRadius: 1,
                               )
@@ -247,6 +291,104 @@ class _CreateSharedCollectionPageState
                   : const Text('Criar lista compartilhada'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CoverPhotoPicker extends StatelessWidget {
+  final String? coverImagePath;
+  final String collectionName;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CoverPhotoPicker({
+    required this.coverImagePath,
+    required this.collectionName,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasCover = coverImagePath != null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: hasCover
+                  ? Image.file(
+                      File(coverImagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          _Placeholder(color: color, name: collectionName),
+                    )
+                  : _Placeholder(color: color, name: collectionName),
+            ),
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: hasCover ? 0.3 : 0.0),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.85),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      hasCover
+                          ? Icons.edit_outlined
+                          : Icons.add_a_photo_outlined,
+                      size: 24,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Placeholder extends StatelessWidget {
+  final Color color;
+  final String name;
+
+  const _Placeholder({required this.color, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final lum = color.computeLuminance();
+    final textColor = lum > 0.5 ? Colors.black54 : Colors.white54;
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, Color.lerp(color, Colors.black, 0.2)!],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 56,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/repositories/sharing_repository.dart';
@@ -122,6 +123,71 @@ class SupabaseSharingRepositoryImpl implements SharingRepository {
         displayName: profileMap[userId] ?? 'Usuário',
       );
     }).toList();
+  }
+
+  @override
+  Stream<List<CollectionMember>> watchMembers(String collectionRemoteId) {
+    // Mesmo padrão de retry de watchByCollection em remote_items_repository_impl:
+    // reconecta automaticamente após RealtimeSubscribeException (JWT expirado).
+    late StreamController<List<CollectionMember>> controller;
+    StreamSubscription? sub;
+
+    Stream<List<CollectionMember>> buildStream() => _client
+        .from('collection_members')
+        .stream(primaryKey: ['collection_id', 'user_id'])
+        .eq('collection_id', collectionRemoteId)
+        .asyncMap((memberRows) async {
+          if (memberRows.isEmpty) return <CollectionMember>[];
+
+          final userIds =
+              memberRows.map((r) => r['user_id'] as String).toList();
+
+          final profileRows = await _client
+              .from('profiles')
+              .select('id, display_name')
+              .inFilter('id', userIds);
+
+          final profileMap = <String, String>{
+            for (final p in profileRows as List)
+              p['id'] as String: (p['display_name'] as String?) ?? 'Usuário',
+          };
+
+          return memberRows.map((r) {
+            final userId = r['user_id'] as String;
+            return CollectionMember(
+              userId: userId,
+              collectionId: collectionRemoteId,
+              role:
+                  r['role'] == 'owner' ? MemberRole.owner : MemberRole.member,
+              displayName: profileMap[userId] ?? 'Usuário',
+            );
+          }).toList();
+        });
+
+    void subscribe() {
+      sub?.cancel();
+      sub = buildStream().listen(
+        (data) => controller.add(data),
+        onError: (Object e) async {
+          if (e is RealtimeSubscribeException) {
+            await Future<void>.delayed(const Duration(seconds: 5));
+            try {
+              await _client.auth.refreshSession();
+            } catch (_) {}
+            subscribe();
+          } else {
+            controller.addError(e);
+          }
+        },
+      );
+    }
+
+    controller = StreamController<List<CollectionMember>>(
+      onListen: subscribe,
+      onCancel: () => sub?.cancel(),
+    );
+
+    return controller.stream;
   }
 
   @override

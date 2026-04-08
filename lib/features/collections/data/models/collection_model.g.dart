@@ -22,43 +22,48 @@ const CollectionModelSchema = CollectionSchema(
       name: r'colorValue',
       type: IsarType.long,
     ),
-    r'createdAt': PropertySchema(
+    r'coverImagePath': PropertySchema(
       id: 1,
+      name: r'coverImagePath',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'emoji': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'emoji',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'id',
       type: IsarType.string,
     ),
     r'inviteCode': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'inviteCode',
       type: IsarType.string,
     ),
     r'isShared': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isShared',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'name',
       type: IsarType.string,
     ),
     r'remoteId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'remoteId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -98,6 +103,12 @@ int _collectionModelEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.coverImagePath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.emoji;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -127,14 +138,15 @@ void _collectionModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.colorValue);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeString(offsets[2], object.emoji);
-  writer.writeString(offsets[3], object.id);
-  writer.writeString(offsets[4], object.inviteCode);
-  writer.writeBool(offsets[5], object.isShared);
-  writer.writeString(offsets[6], object.name);
-  writer.writeString(offsets[7], object.remoteId);
-  writer.writeDateTime(offsets[8], object.updatedAt);
+  writer.writeString(offsets[1], object.coverImagePath);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeString(offsets[3], object.emoji);
+  writer.writeString(offsets[4], object.id);
+  writer.writeString(offsets[5], object.inviteCode);
+  writer.writeBool(offsets[6], object.isShared);
+  writer.writeString(offsets[7], object.name);
+  writer.writeString(offsets[8], object.remoteId);
+  writer.writeDateTime(offsets[9], object.updatedAt);
 }
 
 CollectionModel _collectionModelDeserialize(
@@ -145,15 +157,16 @@ CollectionModel _collectionModelDeserialize(
 ) {
   final object = CollectionModel();
   object.colorValue = reader.readLong(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.emoji = reader.readStringOrNull(offsets[2]);
-  object.id = reader.readString(offsets[3]);
-  object.inviteCode = reader.readStringOrNull(offsets[4]);
-  object.isShared = reader.readBool(offsets[5]);
+  object.coverImagePath = reader.readStringOrNull(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.emoji = reader.readStringOrNull(offsets[3]);
+  object.id = reader.readString(offsets[4]);
+  object.inviteCode = reader.readStringOrNull(offsets[5]);
+  object.isShared = reader.readBool(offsets[6]);
   object.isarId = id;
-  object.name = reader.readString(offsets[6]);
-  object.remoteId = reader.readStringOrNull(offsets[7]);
-  object.updatedAt = reader.readDateTime(offsets[8]);
+  object.name = reader.readString(offsets[7]);
+  object.remoteId = reader.readStringOrNull(offsets[8]);
+  object.updatedAt = reader.readDateTime(offsets[9]);
   return object;
 }
 
@@ -167,20 +180,22 @@ P _collectionModelDeserializeProp<P>(
     case 0:
       return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
-    case 5:
-      return (reader.readBool(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
-    case 7:
+    case 5:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readBool(offset)) as P;
+    case 7:
+      return (reader.readString(offset)) as P;
     case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -434,6 +449,160 @@ extension CollectionModelQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'coverImagePath',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'coverImagePath',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'coverImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'coverImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'coverImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'coverImagePath',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'coverImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'coverImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'coverImagePath',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'coverImagePath',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'coverImagePath',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      coverImagePathIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'coverImagePath',
+        value: '',
       ));
     });
   }
@@ -1374,6 +1543,20 @@ extension CollectionModelQuerySortBy
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByCoverImagePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImagePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByCoverImagePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImagePath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
       sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -1495,6 +1678,20 @@ extension CollectionModelQuerySortThenBy
       thenByColorValueDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'colorValue', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByCoverImagePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImagePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByCoverImagePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImagePath', Sort.desc);
     });
   }
 
@@ -1630,6 +1827,14 @@ extension CollectionModelQueryWhereDistinct
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QDistinct>
+      distinctByCoverImagePath({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'coverImagePath',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct>
       distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -1697,6 +1902,13 @@ extension CollectionModelQueryProperty
   QueryBuilder<CollectionModel, int, QQueryOperations> colorValueProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'colorValue');
+    });
+  }
+
+  QueryBuilder<CollectionModel, String?, QQueryOperations>
+      coverImagePathProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'coverImagePath');
     });
   }
 

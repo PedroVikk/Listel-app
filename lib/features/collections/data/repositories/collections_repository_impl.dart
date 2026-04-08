@@ -10,7 +10,7 @@ class CollectionsRepositoryImpl implements CollectionsRepository {
   @override
   Future<List<Collection>> getAll() async {
     final models = await _db.collectionModels.where().sortByCreatedAtDesc().findAll();
-    return models.map((m) => m.toDomain()).toList();
+    return models.where((m) => !m.isShared).map((m) => m.toDomain()).toList();
   }
 
   @override
@@ -38,6 +38,6 @@ class CollectionsRepositoryImpl implements CollectionsRepository {
     return _db.collectionModels
         .where()
         .watch(fireImmediately: true)
-        .map((models) => models.map((m) => m.toDomain()).toList());
+        .map((models) => models.where((m) => !m.isShared).map((m) => m.toDomain()).toList());
   }
 }

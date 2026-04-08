@@ -12,6 +12,8 @@ abstract class AppRoutes {
   // Auth
   static const login = '/auth/login';
 
+  static const search = '/search';
+
   // Listas compartilhadas
   static const createSharedCollection = '/shared/create';
   static const sharedJoin = '/shared/join';

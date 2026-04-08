@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +29,10 @@ class HomePage extends ConsumerWidget {
         ),
         title: const Text('Minhas Listas'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => context.push(AppRoutes.search),
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push(AppRoutes.settings),
@@ -351,7 +356,10 @@ class _CollectionCard extends ConsumerWidget {
     final color = Color(collection.colorValue);
     final lum = color.computeLuminance();
     final isVeryDark = lum < 0.05;
-    final textColor = lum > 0.5 ? Colors.black87 : Colors.white;
+    // Com foto de capa o gradiente escuro garante contraste — texto sempre branco
+    final textColor = collection.coverImagePath != null
+        ? Colors.white
+        : (lum > 0.5 ? Colors.black87 : Colors.white);
 
     return Material(
       color: Colors.transparent,
@@ -372,34 +380,76 @@ class _CollectionCard extends ConsumerWidget {
                   ),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Foto de capa (se existir)
+              if (collection.coverImagePath != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(
+                    File(collection.coverImagePath!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+              // Gradiente de sobressaída — cobre a metade inferior do card
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.45, 1.0],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.70),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(collection.emoji ?? '🛍️',
-                        style: const TextStyle(fontSize: 28)),
+                    Row(
+                      children: [
+                        if (collection.coverImagePath == null)
+                          Text(
+                            collection.emoji ??
+                                (collection.name.isNotEmpty
+                                    ? collection.name[0].toUpperCase()
+                                    : '?'),
+                            style: TextStyle(
+                              fontSize: 28,
+                              color: collection.emoji == null ? textColor : null,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        const Spacer(),
+                        if (isShared)
+                          Icon(Icons.wifi_tethering,
+                              size: 16,
+                              color: textColor.withValues(alpha: 0.7)),
+                      ],
+                    ),
                     const Spacer(),
-                    if (isShared)
-                      Icon(Icons.wifi_tethering,
-                          size: 16,
-                          color: textColor.withValues(alpha: 0.7)),
+                    Text(
+                      collection.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: textColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
-                const Spacer(),
-                Text(
-                  collection.name,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

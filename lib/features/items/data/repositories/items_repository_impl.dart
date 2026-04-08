@@ -48,4 +48,14 @@ class ItemsRepositoryImpl implements ItemsRepository {
         .watch(fireImmediately: true)
         .map((models) => models.map((m) => m.toDomain()).toList());
   }
+
+  @override
+  Future<List<SavedItem>> searchByName(String query) async {
+    final results = await _db.savedItemModels
+        .filter()
+        .nameContains(query, caseSensitive: false)
+        .sortByCreatedAtDesc()
+        .findAll();
+    return results.map((m) => m.toDomain()).toList();
+  }
 }

@@ -15,28 +15,51 @@ final remoteItemsRepositoryProvider = Provider<ItemsRepository>(
   (ref) => RemoteItemsRepositoryImpl(Supabase.instance.client),
 );
 
-/// Decide qual repositório usar baseado em se a coleção é compartilhada.
+/// Determina se a coleção é compartilhada. Aguarda a primeira emissão do
+/// stream de coleções compartilhadas para evitar a race condition onde
+/// valueOrNull == null durante AsyncLoading. Se o Realtime der timeout ou
+/// falhar por qualquer motivo de rede, assume local (false) para não quebrar
+/// coleções locais que independem do Supabase.
 final _collectionIsSharedProvider =
-    Provider.family<bool, String>((ref, collectionId) {
-  final local = ref.watch(collectionsStreamProvider).valueOrNull ?? [];
-  final shared = ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
-  return shared.any((c) => c.remoteId == collectionId || c.id == collectionId) &&
-      !local.any((c) => c.id == collectionId);
+    FutureProvider.family<bool, String>((ref, collectionId) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return false;
+
+  // Se o stream já emitiu pelo menos uma vez, usa o valor em cache.
+  final cached = ref.read(sharedCollectionsStreamProvider).valueOrNull;
+  if (cached != null) {
+    return cached.any((c) => c.remoteId == collectionId || c.id == collectionId);
+  }
+
+  // Aguarda a primeira emissão; captura falhas de Realtime para não
+  // propagar o erro para coleções locais.
+  try {
+    final shared = await ref.watch(sharedCollectionsStreamProvider.future);
+    return shared.any((c) => c.remoteId == collectionId || c.id == collectionId);
+  } catch (_) {
+    // Realtime indisponível (timeout, sem rede etc.) — trata como local.
+    return false;
+  }
 });
 
+/// Stream dos itens da coleção. Aguarda saber se é compartilhada antes de
+/// abrir o stream do repo correto (Isar local ou Supabase remoto).
 final itemsByCollectionProvider =
-    StreamProvider.family<List<SavedItem>, String>((ref, collectionId) {
-  final isShared = ref.watch(_collectionIsSharedProvider(collectionId));
+    StreamProvider.family<List<SavedItem>, String>((ref, collectionId) async* {
+  final isShared =
+      await ref.watch(_collectionIsSharedProvider(collectionId).future);
   final repo = isShared
       ? ref.watch(remoteItemsRepositoryProvider)
       : ref.watch(itemsRepositoryProvider);
-  return repo.watchByCollection(collectionId);
+  yield* repo.watchByCollection(collectionId);
 });
 
 class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
-  /// Retorna o repositório correto: remoto se a coleção for compartilhada, local caso contrário.
-  ItemsRepository get _repo {
-    final isShared = ref.read(_collectionIsSharedProvider(arg));
+  /// Repo assíncrono: aguarda determinar se a coleção é compartilhada antes
+  /// de retornar o repo correto. Garante que writes nunca vão para o lugar errado.
+  Future<ItemsRepository> get _repoAsync async {
+    final isShared =
+        await ref.read(_collectionIsSharedProvider(arg).future);
     return isShared
         ? ref.read(remoteItemsRepositoryProvider)
         : ref.read(itemsRepositoryProvider);
@@ -44,7 +67,8 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
 
   @override
   Future<List<SavedItem>> build(String collectionId) async {
-    final isShared = ref.watch(_collectionIsSharedProvider(collectionId));
+    final isShared =
+        await ref.watch(_collectionIsSharedProvider(collectionId).future);
     final repo = isShared
         ? ref.watch(remoteItemsRepositoryProvider)
         : ref.watch(itemsRepositoryProvider);
@@ -75,7 +99,8 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       createdAt: now,
       updatedAt: now,
     );
-    await _repo.save(item);
+    final repo = await _repoAsync;
+    await repo.save(item);
     ref.invalidateSelf();
   }
 
@@ -101,7 +126,8 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       createdAt: now,
       updatedAt: now,
     );
-    await _repo.save(item);
+    final repo = await _repoAsync;
+    await repo.save(item);
     ref.invalidateSelf();
   }
 
@@ -110,12 +136,14 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       status: item.isPurchased ? ItemStatus.pending : ItemStatus.purchased,
       updatedAt: DateTime.now(),
     );
-    await _repo.save(updated);
+    final repo = await _repoAsync;
+    await repo.save(updated);
     ref.invalidateSelf();
   }
 
   Future<void> delete(String id) async {
-    await _repo.delete(id);
+    final repo = await _repoAsync;
+    await repo.delete(id);
     ref.invalidateSelf();
   }
 
@@ -126,11 +154,12 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       updatedAt: DateTime.now(),
     );
     final targetIsShared =
-        ref.read(_collectionIsSharedProvider(targetCollectionId));
+        await ref.read(_collectionIsSharedProvider(targetCollectionId).future);
     final targetRepo = targetIsShared
         ? ref.read(remoteItemsRepositoryProvider)
         : ref.read(itemsRepositoryProvider);
-    await _repo.delete(item.id);
+    final repo = await _repoAsync;
+    await repo.delete(item.id);
     await targetRepo.save(updated);
     ref.invalidateSelf();
   }
@@ -140,3 +169,15 @@ final itemsNotifierProvider =
     AsyncNotifierProviderFamily<ItemsNotifier, List<SavedItem>, String>(
   ItemsNotifier.new,
 );
+
+// ─── Pesquisa global ──────────────────────────────────────────────────────
+
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final searchResultsProvider =
+    FutureProvider.autoDispose<List<SavedItem>>((ref) async {
+  final query = ref.watch(searchQueryProvider);
+  if (query.trim().isEmpty) return [];
+  final repo = ref.watch(itemsRepositoryProvider);
+  return repo.searchByName(query.trim());
+});

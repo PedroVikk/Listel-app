@@ -16,6 +16,9 @@ class CollectionModel {
   late DateTime createdAt;
   late DateTime updatedAt;
 
+  // Foto de capa — nullable → migração automática pelo Isar
+  String? coverImagePath;
+
   // Campos de lista compartilhada — nullable/default → migração automática pelo Isar
   bool isShared = false;
   String? remoteId;
@@ -28,6 +31,7 @@ class CollectionModel {
         colorValue: colorValue,
         createdAt: createdAt,
         updatedAt: updatedAt,
+        coverImagePath: coverImagePath,
         isShared: isShared,
         remoteId: remoteId,
         inviteCode: inviteCode,
@@ -40,6 +44,7 @@ class CollectionModel {
     ..colorValue = entity.colorValue
     ..createdAt = entity.createdAt
     ..updatedAt = entity.updatedAt
+    ..coverImagePath = entity.coverImagePath
     ..isShared = entity.isShared
     ..remoteId = entity.remoteId
     ..inviteCode = entity.inviteCode;

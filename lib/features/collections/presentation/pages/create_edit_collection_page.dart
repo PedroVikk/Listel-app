@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/collections_provider.dart';
 
 // Paleta de 24 cores para pastas
@@ -45,8 +49,8 @@ class CreateEditCollectionPage extends ConsumerStatefulWidget {
 class _CreateEditCollectionPageState
     extends ConsumerState<CreateEditCollectionPage> {
   final _nameController = TextEditingController();
-  final _emojiController = TextEditingController();
   Color _selectedColor = _kCollectionColors.first;
+  String? _coverImagePath;
   bool _saving = false;
 
   @override
@@ -61,8 +65,8 @@ class _CreateEditCollectionPageState
     if (existing != null && mounted) {
       setState(() {
         _nameController.text = existing.name;
-        _emojiController.text = existing.emoji ?? '🛍️';
         _selectedColor = Color(existing.colorValue);
+        _coverImagePath = existing.coverImagePath;
       });
     }
   }
@@ -70,8 +74,92 @@ class _CreateEditCollectionPageState
   @override
   void dispose() {
     _nameController.dispose();
-    _emojiController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: source);
+    if (picked == null || !mounted) return;
+
+    // Abre o editor de recorte — o usuário escolhe qual parte da foto usar
+    final colorScheme = Theme.of(context).colorScheme;
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Ajustar foto de capa',
+          toolbarColor: colorScheme.surface,
+          toolbarWidgetColor: colorScheme.onSurface,
+          backgroundColor: Colors.black,
+          activeControlsWidgetColor: colorScheme.primary,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+      ],
+    );
+    if (cropped == null || !mounted) return;
+
+    // Copia para o diretório permanente do app (arquivo recortado é temporário)
+    final docsDir = await getApplicationDocumentsDirectory();
+    final coversDir = Directory('${docsDir.path}/collection_covers');
+    await coversDir.create(recursive: true);
+
+    final srcPath = cropped.path;
+    final dotIndex = srcPath.lastIndexOf('.');
+    final ext = dotIndex != -1 ? srcPath.substring(dotIndex) : '.jpg';
+    final fileName = 'cover_${DateTime.now().millisecondsSinceEpoch}$ext';
+    final destPath = '${coversDir.path}/$fileName';
+    await File(srcPath).copy(destPath);
+
+    // Remove foto anterior se havia uma diferente
+    if (_coverImagePath != null && _coverImagePath != destPath) {
+      final old = File(_coverImagePath!);
+      if (await old.exists()) await old.delete();
+    }
+
+    setState(() => _coverImagePath = destPath);
+  }
+
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Tirar foto'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            if (_coverImagePath != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline,
+                    color: Theme.of(ctx).colorScheme.error),
+                title: Text('Remover foto',
+                    style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() => _coverImagePath = null);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -86,15 +174,15 @@ class _CreateEditCollectionPageState
               .read(collectionsNotifierProvider.notifier)
               .updateCollection(existing.copyWith(
                 name: _nameController.text.trim(),
-                emoji: _emojiController.text.trim(),
                 colorValue: _selectedColor.toARGB32(),
+                coverImagePath: _coverImagePath,
               ));
         }
       } else {
         await ref.read(collectionsNotifierProvider.notifier).create(
               name: _nameController.text.trim(),
-              emoji: _emojiController.text.trim(),
               colorValue: _selectedColor.toARGB32(),
+              coverImagePath: _coverImagePath,
             );
       }
       if (mounted) context.pop();
@@ -105,6 +193,8 @@ class _CreateEditCollectionPageState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditing ? 'Editar lista' : 'Nova lista'),
@@ -112,54 +202,15 @@ class _CreateEditCollectionPageState
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text('Visualização',
-              style: Theme.of(context).textTheme.labelLarge),
+          Text('Foto de capa', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
-          // Preview do card
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              color: _selectedColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: _selectedColor.withValues(alpha: 0.4), width: 2),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Text(
-                  _emojiController.text.isEmpty
-                      ? 'Use um Emoji'
-                      : _emojiController.text,
-                  style: const TextStyle(fontSize: 36),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _nameController.text.isEmpty
-                        ? 'Nome da lista'
-                        : _nameController.text,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: _selectedColor.computeLuminance() > 0.7
-                              ? Colors.black87
-                              : null,
-                        ),
-                  ),
-                ),
-              ],
-            ),
+          _CoverPhotoPicker(
+            coverImagePath: _coverImagePath,
+            collectionName: _nameController.text,
+            color: _selectedColor,
+            onTap: _showImageSourceSheet,
           ),
           const SizedBox(height: 24),
-          TextField(
-            controller: _emojiController,
-            decoration: const InputDecoration(
-              labelText: 'Emoji',
-              hintText: '🛍️',
-            ),
-            maxLength: 2,
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 12),
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(
@@ -170,10 +221,9 @@ class _CreateEditCollectionPageState
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 24),
-          Text('Cor da pasta',
+          Text('Cor de fundo',
               style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 12),
-          // Grade de cores
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -195,16 +245,13 @@ class _CreateEditCollectionPageState
                     shape: BoxShape.circle,
                     border: isSelected
                         ? Border.all(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: colorScheme.primary,
                             width: 3)
                         : Border.all(color: Colors.grey.shade300, width: 1),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withValues(alpha: 0.4),
+                              color: colorScheme.primary.withValues(alpha: 0.4),
                               blurRadius: 6,
                               spreadRadius: 1,
                             )
@@ -233,6 +280,105 @@ class _CreateEditCollectionPageState
                 : Text(widget.isEditing ? 'Salvar' : 'Criar lista'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CoverPhotoPicker extends StatelessWidget {
+  final String? coverImagePath;
+  final String collectionName;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CoverPhotoPicker({
+    required this.coverImagePath,
+    required this.collectionName,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasCover = coverImagePath != null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: hasCover
+                  ? Image.file(
+                      File(coverImagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _Placeholder(
+                          color: color, name: collectionName),
+                    )
+                  : _Placeholder(color: color, name: collectionName),
+            ),
+            // Overlay escuro + ícone de câmera
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: hasCover ? 0.3 : 0.0),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.85),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      hasCover
+                          ? Icons.edit_outlined
+                          : Icons.add_a_photo_outlined,
+                      size: 24,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Placeholder extends StatelessWidget {
+  final Color color;
+  final String name;
+
+  const _Placeholder({required this.color, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final lum = color.computeLuminance();
+    final textColor = lum > 0.5 ? Colors.black54 : Colors.white54;
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, Color.lerp(color, Colors.black, 0.2)!],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 56,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
       ),
     );
   }

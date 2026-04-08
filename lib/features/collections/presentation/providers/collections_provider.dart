@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -21,10 +22,22 @@ final collectionsStreamProvider = StreamProvider<List<Collection>>((ref) {
 
 /// Stream das coleções compartilhadas (Supabase Realtime).
 /// Emite lista vazia se não autenticado.
+/// Faz overlay do coverImagePath salvo localmente no Isar (por id/remoteId).
 final sharedCollectionsStreamProvider = StreamProvider<List<Collection>>((ref) {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return const Stream.empty();
-  return ref.watch(remoteCollectionsRepositoryProvider).watchAll();
+
+  final localRepo = ref.watch(collectionsRepositoryProvider);
+
+  return ref.watch(remoteCollectionsRepositoryProvider).watchAll().asyncMap(
+    (remoteCollections) => Future.wait(
+      remoteCollections.map((c) async {
+        final local = await localRepo.getById(c.id);
+        if (local?.coverImagePath == null) return c;
+        return c.copyWith(coverImagePath: local!.coverImagePath);
+      }),
+    ),
+  );
 });
 
 class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
@@ -37,6 +50,7 @@ class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
     required String name,
     String? emoji,
     required int colorValue,
+    String? coverImagePath,
   }) async {
     final now = DateTime.now();
     final collection = Collection(
@@ -46,6 +60,7 @@ class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
       colorValue: colorValue,
       createdAt: now,
       updatedAt: now,
+      coverImagePath: coverImagePath,
     );
     await ref.read(collectionsRepositoryProvider).save(collection);
     ref.invalidateSelf();
@@ -58,6 +73,11 @@ class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
   }
 
   Future<void> delete(String id) async {
+    final existing = await ref.read(collectionsRepositoryProvider).getById(id);
+    if (existing?.coverImagePath != null) {
+      final file = File(existing!.coverImagePath!);
+      if (await file.exists()) await file.delete();
+    }
     await ref.read(collectionsRepositoryProvider).delete(id);
     ref.invalidateSelf();
   }

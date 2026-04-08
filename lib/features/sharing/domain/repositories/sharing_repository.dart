@@ -15,6 +15,9 @@ abstract class SharingRepository {
   /// Lista os membros de uma coleção compartilhada.
   Future<List<CollectionMember>> getMembers(String collectionRemoteId);
 
+  /// Stream reativo dos membros — atualiza em tempo real via Supabase Realtime.
+  Stream<List<CollectionMember>> watchMembers(String collectionRemoteId);
+
   /// Remove o usuário atual de uma coleção (ou deleta se for dono).
   Future<void> leaveCollection(String collectionRemoteId);
 }

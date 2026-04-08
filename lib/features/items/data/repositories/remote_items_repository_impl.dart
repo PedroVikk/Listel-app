@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/saved_item.dart';
 import '../../domain/repositories/items_repository.dart';
@@ -100,13 +102,52 @@ class RemoteItemsRepositoryImpl implements ItemsRepository {
 
   @override
   Stream<List<SavedItem>> watchByCollection(String collectionId) {
-    // Supabase .stream() emite a lista completa a cada mudança na tabela.
-    // Filtramos por collection_id após receber.
-    return _client
+    // Supabase .stream() abre um canal Realtime. Se o JWT expirar enquanto o
+    // canal estiver aberto, o Supabase lança RealtimeSubscribeException com
+    // channelError/InvalidJWTToken. Relançamos a subscription automaticamente
+    // após refreshar o token, sem propagar o erro para a UI.
+    late StreamController<List<SavedItem>> controller;
+    StreamSubscription? sub;
+
+    void subscribe() {
+      sub?.cancel();
+      sub = _client
+          .from('shared_items')
+          .stream(primaryKey: ['id'])
+          .eq('collection_id', collectionId)
+          .order('created_at')
+          .asyncMap((rows) => _mapRows(rows))
+          .listen(
+            (data) => controller.add(data),
+            onError: (Object e) async {
+              if (e is RealtimeSubscribeException) {
+                await Future<void>.delayed(const Duration(seconds: 5));
+                try {
+                  await _client.auth.refreshSession();
+                } catch (_) {}
+                subscribe();
+              } else {
+                controller.addError(e);
+              }
+            },
+          );
+    }
+
+    controller = StreamController<List<SavedItem>>(
+      onListen: subscribe,
+      onCancel: () => sub?.cancel(),
+    );
+
+    return controller.stream;
+  }
+
+  @override
+  Future<List<SavedItem>> searchByName(String query) async {
+    final rows = await _client
         .from('shared_items')
-        .stream(primaryKey: ['id'])
-        .eq('collection_id', collectionId)
-        .order('created_at')
-        .asyncMap((rows) => _mapRows(rows));
+        .select()
+        .ilike('name', '%$query%')
+        .order('created_at');
+    return _mapRows(rows as List);
   }
 }

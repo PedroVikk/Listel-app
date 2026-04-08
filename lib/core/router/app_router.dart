@@ -13,6 +13,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/sharing/presentation/pages/create_shared_collection_page.dart';
 import '../../features/sharing/presentation/pages/join_collection_page.dart';
 import '../../features/sharing/presentation/pages/members_page.dart';
+import '../../features/items/presentation/pages/search_page.dart';
 import 'app_routes.dart';
 
 GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
@@ -82,6 +83,10 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
       GoRoute(
         path: AppRoutes.settings,
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        builder: (context, state) => const SearchPage(),
       ),
       GoRoute(
         path: AppRoutes.login,

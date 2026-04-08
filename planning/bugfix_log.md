@@ -129,3 +129,31 @@ await _db.writeTxn(() => _db.savedItemModels.put(model));
 **Causa raiz:** A policy de SELECT do RLS em `shared_collections` exige que o usuário já seja membro da coleção. Um usuário tentando entrar pelo código ainda não é membro, então o SELECT direto (`eq('invite_code', ...).maybeSingle()`) era bloqueado e retornava `null`.
 
 **Correção:** Substituído o SELECT direto por uma chamada RPC (`join_shared_collection`) com `SECURITY DEFINER`, que executa fora do contexto do RLS. A função no Supabase faz o SELECT por `invite_code` e o INSERT em `collection_members` (`ON CONFLICT DO NOTHING` para idempotência) numa única operação segura.
+
+---
+
+### 2026-04-08 — RealtimeSubscribeException derrubava todas as coleções (local e compartilhada)
+
+**Arquivo(s):** `lib/features/items/presentation/providers/items_provider.dart`
+
+**Sintoma:** Tanto a tela de detalhe de coleções locais quanto compartilhadas exibia `Erro: RealtimeSubscribeException(status: RealtimeSubscribeStatus.timedOut, details: null)` — nenhuma lista carregava itens.
+
+**Causa raiz:** `_collectionIsSharedProvider` usava `await ref.watch(sharedCollectionsStreamProvider.future)` para determinar se a coleção era compartilhada (correção da race condition anterior). O `sharedCollectionsStreamProvider` abre uma conexão Supabase Realtime via `.stream()`. Se o Realtime der timeout (sem rede, servidor lento etc.), o `StreamProvider.future` propaga a exceção — derrubando `itemsByCollectionProvider` e `ItemsNotifier.build` para **todas** as coleções, inclusive as locais que nunca precisam do Supabase.
+
+**Correção:**
+1. **Cache primeiro:** antes de aguardar, verifica `sharedCollectionsStreamProvider.valueOrNull`; se o stream já emitiu, usa o valor em cache sem abrir nova conexão Realtime.
+2. **Try/catch no await:** se o Realtime falhar por qualquer motivo, captura a exceção e retorna `false` (trata como local). Coleções locais funcionam normalmente; coleções compartilhadas só falham quando não há conectividade, que é comportamento esperado.
+
+```dart
+// _collectionIsSharedProvider — items_provider.dart
+final cached = ref.read(sharedCollectionsStreamProvider).valueOrNull;
+if (cached != null) {
+  return cached.any((c) => c.remoteId == collectionId || c.id == collectionId);
+}
+try {
+  final shared = await ref.watch(sharedCollectionsStreamProvider.future);
+  return shared.any((c) => c.remoteId == collectionId || c.id == collectionId);
+} catch (_) {
+  return false;
+}
+```
