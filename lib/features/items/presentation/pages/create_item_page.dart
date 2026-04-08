@@ -17,6 +17,7 @@ class CreateItemPage extends ConsumerStatefulWidget {
 class _CreateItemPageState extends ConsumerState<CreateItemPage> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
+  final _linkController = TextEditingController();
   final _notesController = TextEditingController();
   String? _localImagePath;
   bool _saving = false;
@@ -25,6 +26,7 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
+    _linkController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -41,12 +43,14 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
     try {
       final price = double.tryParse(
           _priceController.text.replaceAll(',', '.'));
+      final link = _linkController.text.trim();
       await ref
           .read(itemsNotifierProvider(widget.collectionId).notifier)
           .createManual(
             collectionId: widget.collectionId,
             name: _nameController.text.trim(),
             localImagePath: _localImagePath,
+            url: link.isEmpty ? null : link,
             price: price,
             notes: _notesController.text.trim().isEmpty
                 ? null
@@ -117,6 +121,15 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
             maxLength: 12,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _linkController,
+            decoration: const InputDecoration(
+                labelText: 'Link', hintText: 'https://...'),
+            keyboardType: TextInputType.url,
+            maxLength: 500,
             maxLengthEnforcement: MaxLengthEnforcement.enforced,
           ),
           const SizedBox(height: 16),

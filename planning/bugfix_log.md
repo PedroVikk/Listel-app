@@ -99,3 +99,33 @@ await _db.writeTxn(() => _db.savedItemModels.put(model));
 - Navegação pós-criação: substituído `context.go` por `context.pushReplacement` para manter histórico.
 - Share intent: `collectionsStreamProvider` só retornava locais → mesclado com `sharedCollectionsStreamProvider`.
 - Race condition RLS: passa o objeto `Collection` via `extra:` na navegação para evitar depender da stream enquanto o INSERT assíncrono termina.
+
+---
+
+### 2026-04-07 — Troca de ícone do launcher não funcionava
+
+**Arquivo(s):** `android/app/src/main/kotlin/com/wishnesita/wish_nesita/MainActivity.kt`
+
+**Sintoma:** Ao selecionar uma variante de ícone nas configurações, o app fechava mas o ícone no launcher não mudava ao retornar.
+
+**Causa raiz 1 — ordem não determinística no loop:** `setAppIcon()` usava `HashMap.forEach` para habilitar/desabilitar todos os aliases de uma vez. `HashMap` não garante ordem de iteração. Se o Android matava o processo no meio do loop e o alias ativo havia sido desabilitado antes de o novo ser habilitado, o launcher ficava sem nenhum alias ativo — o ícone desaparecia ou ficava travado no estado anterior.
+
+**Correção 1:** Reestruturado para habilitar o novo alias **primeiro** em chamada separada, depois desabilitar os demais em loop. Assim mesmo se o app for morto no meio, sempre há ao menos um alias ativo.
+
+**Causa raiz 2 — `getActiveIcon()` ignorava estado `DEFAULT`:** Antes da primeira troca, todos os aliases estão em `COMPONENT_ENABLED_STATE_DEFAULT` (valor do manifesto). O método comparava apenas com `COMPONENT_ENABLED_STATE_ENABLED`, então nunca encontrava nenhum e retornava `"default"` sem checar o manifesto — a UI mostrava sempre "Padrão" selecionado mesmo após a troca.
+
+**Correção 2:** Adicionado fallback que consulta `ActivityInfo.enabled` para aliases em estado `DEFAULT`, identificando corretamente qual o manifesto declara como ativo.
+
+---
+
+### 2026-04-07 — Código de convite sempre retornava "inválido ou expirado"
+
+**Arquivo(s):**
+- `lib/features/sharing/data/repositories/supabase_sharing_repository_impl.dart`
+- Supabase: nova função RPC `join_shared_collection`
+
+**Sintoma:** Ao inserir um código de convite válido na tela "Entrar em uma lista", o app exibia sempre "Código de convite inválido ou expirado".
+
+**Causa raiz:** A policy de SELECT do RLS em `shared_collections` exige que o usuário já seja membro da coleção. Um usuário tentando entrar pelo código ainda não é membro, então o SELECT direto (`eq('invite_code', ...).maybeSingle()`) era bloqueado e retornava `null`.
+
+**Correção:** Substituído o SELECT direto por uma chamada RPC (`join_shared_collection`) com `SECURITY DEFINER`, que executa fora do contexto do RLS. A função no Supabase faz o SELECT por `invite_code` e o INSERT em `collection_members` (`ON CONFLICT DO NOTHING` para idempotência) numa única operação segura.

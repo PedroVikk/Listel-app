@@ -18,6 +18,14 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.account_circle_outlined),
+          onPressed: () {
+            final isLoggedIn =
+                Supabase.instance.client.auth.currentUser != null;
+            if (!isLoggedIn) context.push(AppRoutes.login);
+          },
+        ),
         title: const Text('Minhas Listas'),
         actions: [
           IconButton(

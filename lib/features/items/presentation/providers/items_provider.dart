@@ -83,6 +83,7 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
     required String collectionId,
     required String name,
     String? localImagePath,
+    String? url,
     double? price,
     String? notes,
   }) async {
@@ -92,6 +93,7 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       collectionId: collectionId,
       name: name,
       localImagePath: localImagePath,
+      url: url,
       price: price,
       notes: notes,
       status: ItemStatus.pending,

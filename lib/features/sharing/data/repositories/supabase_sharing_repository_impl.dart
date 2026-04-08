@@ -74,33 +74,20 @@ class SupabaseSharingRepositoryImpl implements SharingRepository {
 
   @override
   Future<Collection> joinByInviteCode(String inviteCode) async {
-    final userId = _userId;
+    // Usa RPC com SECURITY DEFINER para contornar o RLS:
+    // um novo usuário ainda não é membro, então SELECT direto em
+    // shared_collections seria bloqueado pela policy de SELECT.
+    // A função no Supabase faz o SELECT e o INSERT internamente.
+    final dynamic result = await _client.rpc(
+      'join_shared_collection',
+      params: {'p_invite_code': inviteCode.toUpperCase()},
+    );
 
-    final row = await _client
-        .from('shared_collections')
-        .select()
-        .eq('invite_code', inviteCode.toUpperCase())
-        .maybeSingle();
-
-    if (row == null) {
+    if (result == null) {
       throw Exception('Código de convite inválido ou expirado');
     }
 
-    final collectionId = row['id'] as String;
-
-    // Insert — idempotente: ignora erro 23505 (já é membro)
-    // Não usamos upsert porque o ON CONFLICT DO UPDATE aciona a policy USING
-    // (SELECT) do RLS, que bloqueia quando o usuário ainda não é membro.
-    try {
-      await _client.from('collection_members').insert({
-        'collection_id': collectionId,
-        'user_id': userId,
-        'role': 'member',
-      });
-    } on PostgrestException catch (e) {
-      if (e.code != '23505') rethrow; // 23505 = unique violation (já membro)
-    }
-
+    final row = result is List ? result.first as Map<String, dynamic> : result as Map<String, dynamic>;
     return SharedCollectionDto.fromJson(row);
   }
 

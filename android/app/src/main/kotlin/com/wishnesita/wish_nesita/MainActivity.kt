@@ -10,7 +10,6 @@ class MainActivity : FlutterActivity() {
 
     private val iconChannel = "com.wishnesita/app_icon"
 
-    // Mapeamento: id (usado pelo Flutter) → nome completo do alias
     private val aliases = mapOf(
         "default" to "com.wishnesita.wish_nesita.AliasDefault",
         "pink"    to "com.wishnesita.wish_nesita.AliasPink",
@@ -29,8 +28,12 @@ class MainActivity : FlutterActivity() {
                             result.error("INVALID_ICON", "Variante '$icon' não existe.", null)
                             return@setMethodCallHandler
                         }
-                        setAppIcon(icon)
-                        result.success(null)
+                        try {
+                            setAppIcon(icon)
+                            result.success(null)
+                        } catch (e: Exception) {
+                            result.error("SET_ICON_FAILED", e.message, null)
+                        }
                     }
                     "getActiveIcon" -> {
                         result.success(getActiveIcon())
@@ -42,14 +45,20 @@ class MainActivity : FlutterActivity() {
 
     private fun setAppIcon(iconId: String) {
         val pm = packageManager
-        aliases.forEach { (id, aliasName) ->
-            val state = if (id == iconId)
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            else
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+
+        // 1. Habilita o novo alias PRIMEIRO — garante que o launcher sempre
+        //    tem pelo menos um alias ativo, mesmo se o app for morto no meio.
+        pm.setComponentEnabledSetting(
+            ComponentName(this, aliases[iconId]!!),
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP,
+        )
+
+        // 2. Desabilita todos os outros.
+        aliases.filter { it.key != iconId }.values.forEach { aliasName ->
             pm.setComponentEnabledSetting(
                 ComponentName(this, aliasName),
-                state,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 PackageManager.DONT_KILL_APP,
             )
         }
@@ -57,9 +66,20 @@ class MainActivity : FlutterActivity() {
 
     private fun getActiveIcon(): String {
         val pm = packageManager
-        return aliases.entries.firstOrNull { (_, aliasName) ->
+        // Procura alias explicitamente ENABLED (após primeira troca).
+        aliases.entries.firstOrNull { (_, aliasName) ->
             pm.getComponentEnabledSetting(ComponentName(this, aliasName)) ==
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        }?.key ?: "default"
+        }?.let { return it.key }
+
+        // Antes da primeira troca todos estão em DEFAULT — verifica qual
+        // o manifest declarou como enabled="true".
+        aliases.entries.firstOrNull { (_, aliasName) ->
+            pm.getComponentEnabledSetting(ComponentName(this, aliasName)) ==
+                PackageManager.COMPONENT_ENABLED_STATE_DEFAULT &&
+            pm.getActivityInfo(ComponentName(this, aliasName), 0).enabled
+        }?.let { return it.key }
+
+        return "default"
     }
 }
