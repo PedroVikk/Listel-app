@@ -22,7 +22,11 @@ class CollectionsRepositoryImpl implements CollectionsRepository {
   @override
   Future<void> save(Collection collection) async {
     final model = CollectionModel.fromDomain(collection);
-    await _db.writeTxn(() => _db.collectionModels.put(model));
+    await _db.writeTxn(() async {
+      final existing = await _db.collectionModels.where().idEqualTo(collection.id).findFirst();
+      if (existing != null) model.isarId = existing.isarId;
+      await _db.collectionModels.put(model);
+    });
   }
 
   @override

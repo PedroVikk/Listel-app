@@ -46,40 +46,42 @@ class MainActivity : FlutterActivity() {
     private fun setAppIcon(iconId: String) {
         val pm = packageManager
 
-        // 1. Habilita o novo alias PRIMEIRO — garante que o launcher sempre
-        //    tem pelo menos um alias ativo, mesmo se o app for morto no meio.
-        pm.setComponentEnabledSetting(
-            ComponentName(this, aliases[iconId]!!),
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP,
-        )
-
-        // 2. Desabilita todos os outros.
-        aliases.filter { it.key != iconId }.values.forEach { aliasName ->
+        if (iconId == "default") {
+            // "Padrão" = todos os aliases desabilitados; MainActivity serve como launcher.
+            aliases.values.forEach { aliasName ->
+                pm.setComponentEnabledSetting(
+                    ComponentName(this, aliasName),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP,
+                )
+            }
+        } else {
+            // 1. Habilita o novo alias PRIMEIRO — garante launcher sempre ativo.
             pm.setComponentEnabledSetting(
-                ComponentName(this, aliasName),
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                ComponentName(this, aliases[iconId]!!),
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP,
             )
+            // 2. Desabilita todos os outros aliases.
+            aliases.filter { it.key != iconId }.values.forEach { aliasName ->
+                pm.setComponentEnabledSetting(
+                    ComponentName(this, aliasName),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP,
+                )
+            }
         }
     }
 
     private fun getActiveIcon(): String {
         val pm = packageManager
-        // Procura alias explicitamente ENABLED (após primeira troca).
+        // Alias explicitamente ENABLED → variante ativa.
         aliases.entries.firstOrNull { (_, aliasName) ->
             pm.getComponentEnabledSetting(ComponentName(this, aliasName)) ==
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
         }?.let { return it.key }
 
-        // Antes da primeira troca todos estão em DEFAULT — verifica qual
-        // o manifest declarou como enabled="true".
-        aliases.entries.firstOrNull { (_, aliasName) ->
-            pm.getComponentEnabledSetting(ComponentName(this, aliasName)) ==
-                PackageManager.COMPONENT_ENABLED_STATE_DEFAULT &&
-            pm.getActivityInfo(ComponentName(this, aliasName), 0).enabled
-        }?.let { return it.key }
-
+        // Nenhum alias habilitado → ícone padrão (MainActivity no launcher).
         return "default"
     }
 }

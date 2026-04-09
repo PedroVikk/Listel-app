@@ -80,6 +80,17 @@ _Ver guia completo: [SHARED_LIST_FEATURE.md](./SHARED_LIST_FEATURE.md)_
 
 ---
 
+## v2.1 — Novas Formas de Adicionar Item
+
+### Task 17 — Escanear Print (OCR)
+_Ver guia completo: [task_17_print_scanner.md](./task_17_print_scanner.md)_
+
+- [ ] Adicionar `google_mlkit_text_recognition` ao pubspec + verificar minSdkVersion 21
+- [ ] Criar `PrintScannerService` (OCR + extração de nome e preço)
+- [ ] Atualizar `CreateItemPage` com opção "Escanear print" + loading + pré-preenchimento
+
+---
+
 ## v3 — Notificações e Backend Avançado
 
 - [ ] Compartilhar pasta com amigos (link ou QR code)

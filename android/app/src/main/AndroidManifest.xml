@@ -28,6 +28,12 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"/>
 
+            <!-- Launcher padrão — necessário para flutter run funcionar independente do alias ativo -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
             <!-- Share intent: receber texto/URL compartilhado -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
@@ -63,10 +69,11 @@
              por vez, controlado via PackageManager no MainActivity
              ══════════════════════════════════════════════════════════ -->
 
-        <!-- Variante: Padrão (habilitada por padrão) -->
+        <!-- Variante: Padrão — desabilitada por padrão; MainActivity já cobre o launcher.
+             Habilitada pelo app_icon_service quando o usuário escolhe esta variante explicitamente. -->
         <activity-alias
             android:name=".AliasDefault"
-            android:enabled="true"
+            android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_default"
             android:targetActivity=".MainActivity">

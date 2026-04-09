@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/items_provider.dart';
+import '../../../../core/services/print_scanner_service.dart';
 
 class CreateItemPage extends ConsumerStatefulWidget {
   final String collectionId;
@@ -21,6 +22,7 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
   final _notesController = TextEditingController();
   String? _localImagePath;
   bool _saving = false;
+  bool _scanning = false;
 
   @override
   void dispose() {
@@ -31,10 +33,81 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  void _showPhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Galeria'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Câmera'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.document_scanner_outlined),
+              title: const Text('Escanear print'),
+              subtitle: const Text('Detecta nome e preço automaticamente'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _scanPrint();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: source);
+    if (file != null) setState(() => _localImagePath = file.path);
+  }
+
+  Future<void> _scanPrint() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file != null) setState(() => _localImagePath = file.path);
+    if (file == null) return;
+
+    setState(() {
+      _localImagePath = file.path;
+      _scanning = true;
+    });
+
+    try {
+      final result = await PrintScannerService().scan(file.path);
+      if (!mounted) return;
+
+      if (result.name != null && _nameController.text.trim().isEmpty) {
+        _nameController.text = result.name!;
+      }
+      if (result.price != null && _priceController.text.trim().isEmpty) {
+        _priceController.text =
+            result.price!.toStringAsFixed(2).replaceAll('.', ',');
+      }
+      if (result.name == null && result.price == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível detectar texto no print.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _scanning = false);
+    }
   }
 
   Future<void> _save() async {
@@ -71,38 +144,72 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
         children: [
           // Foto
           GestureDetector(
-            onTap: _pickImage,
+            onTap: _scanning ? null : _showPhotoOptions,
             child: Container(
               height: 160,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: _localImagePath != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.file(File(_localImagePath!), fit: BoxFit.cover),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+              child: _scanning
+                  ? Stack(
                       children: [
-                        Icon(Icons.add_photo_alternate_outlined,
-                            size: 40,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant),
-                        const SizedBox(height: 8),
-                        Text('Adicionar foto',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                )),
+                        if (_localImagePath != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.file(
+                              File(_localImagePath!),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                          ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black45,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(color: Colors.white),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Detectando texto...',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
-                    ),
+                    )
+                  : _localImagePath != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(File(_localImagePath!), fit: BoxFit.cover),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_outlined,
+                                size: 40,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
+                            const SizedBox(height: 8),
+                            Text('Adicionar foto',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    )),
+                          ],
+                        ),
             ),
           ),
           const SizedBox(height: 20),
@@ -143,7 +250,7 @@ class _CreateItemPageState extends ConsumerState<CreateItemPage> {
           ),
           const SizedBox(height: 32),
           FilledButton(
-            onPressed: _saving ? null : _save,
+            onPressed: (_saving || _scanning) ? null : _save,
             child: _saving
                 ? const SizedBox(
                     width: 20,
