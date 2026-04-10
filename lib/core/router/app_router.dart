@@ -6,6 +6,8 @@ import '../../features/collections/presentation/pages/collection_detail_page.dar
 import '../../features/collections/presentation/pages/create_edit_collection_page.dart';
 import '../../features/items/presentation/pages/item_detail_page.dart';
 import '../../features/items/presentation/pages/create_item_page.dart';
+import '../../features/items/presentation/pages/edit_item_page.dart';
+import '../../features/items/domain/entities/saved_item.dart';
 import '../../features/share_intent/presentation/pages/share_received_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
@@ -72,6 +74,15 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
           final id = state.pathParameters['id']!;
           return ItemDetailPage(itemId: id);
         },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final item = state.extra as SavedItem;
+              return EditItemPage(item: item);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.shareReceived,

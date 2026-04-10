@@ -147,6 +147,12 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
     ref.invalidateSelf();
   }
 
+  Future<void> updateItem(SavedItem item) async {
+    final repo = await _repoAsync;
+    await repo.save(item.copyWith(updatedAt: DateTime.now()));
+    ref.invalidateSelf();
+  }
+
   Future<void> moveToCollection(
       SavedItem item, String targetCollectionId) async {
     final updated = item.copyWith(

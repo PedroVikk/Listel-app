@@ -55,6 +55,24 @@ class SharingNotifier extends AsyncNotifier<void> {
     return result.value!;
   }
 
+  /// Atualiza nome/cor no Supabase e salva coverImagePath localmente no Isar.
+  Future<void> updateSharedCollection({
+    required Collection collection,
+    String? coverImagePath,
+  }) async {
+    // Atualiza nome/cor no Supabase
+    await ref
+        .read(remoteCollectionsRepositoryProvider)
+        .save(collection.copyWith(updatedAt: DateTime.now()));
+
+    // Salva coverImagePath localmente no Isar (foto não sobe para o Supabase)
+    final localRepo = ref.read(collectionsRepositoryProvider);
+    final local = await localRepo.getById(collection.remoteId ?? collection.id);
+    await localRepo.save(
+      (local ?? collection).copyWith(coverImagePath: coverImagePath),
+    );
+  }
+
   Future<void> leaveCollection(String remoteId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(

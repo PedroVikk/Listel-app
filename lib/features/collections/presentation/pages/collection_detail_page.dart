@@ -111,11 +111,10 @@ class CollectionDetailPage extends ConsumerWidget {
                 itemsAsync.valueOrNull ?? [],
               ),
             ),
-          if (collection?.isShared != true)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => context.push('/collection/$collectionId/edit'),
-            ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => context.push('/collection/$collectionId/edit'),
+          ),
         ],
       ),
       body: itemsAsync.when(

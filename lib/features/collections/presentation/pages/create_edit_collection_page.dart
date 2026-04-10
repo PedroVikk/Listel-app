@@ -6,6 +6,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/collections_provider.dart';
+import '../../../sharing/presentation/providers/sharing_provider.dart';
 
 // Paleta de 24 cores para pastas
 const _kCollectionColors = [
@@ -52,6 +53,7 @@ class _CreateEditCollectionPageState
   Color _selectedColor = _kCollectionColors.first;
   String? _coverImagePath;
   bool _saving = false;
+  bool _isShared = false;
 
   @override
   void initState() {
@@ -60,15 +62,35 @@ class _CreateEditCollectionPageState
   }
 
   Future<void> _loadExisting() async {
-    final existing =
-        await ref.read(collectionsRepositoryProvider).getById(widget.collectionId!);
-    if (existing != null && mounted) {
-      setState(() {
-        _nameController.text = existing.name;
-        _selectedColor = Color(existing.colorValue);
-        _coverImagePath = existing.coverImagePath;
-      });
+    final localRepo = ref.read(collectionsRepositoryProvider);
+    final local = await localRepo.getById(widget.collectionId!);
+
+    if (local != null && !local.isShared) {
+      // Lista local
+      if (mounted) {
+        setState(() {
+          _nameController.text = local.name;
+          _selectedColor = Color(local.colorValue);
+          _coverImagePath = local.coverImagePath;
+        });
+      }
+      return;
     }
+
+    // Lista compartilhada — dados canônicos vêm do Supabase
+    try {
+      final remote = await ref
+          .read(remoteCollectionsRepositoryProvider)
+          .getById(widget.collectionId!);
+      if (remote != null && mounted) {
+        setState(() {
+          _nameController.text = remote.name;
+          _selectedColor = Color(remote.colorValue);
+          _coverImagePath = local?.coverImagePath; // foto fica só no Isar
+          _isShared = true;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -167,16 +189,36 @@ class _CreateEditCollectionPageState
     setState(() => _saving = true);
     try {
       if (widget.isEditing) {
-        final existing =
-            await ref.read(collectionsRepositoryProvider).getById(widget.collectionId!);
-        if (existing != null) {
-          await ref
-              .read(collectionsNotifierProvider.notifier)
-              .updateCollection(existing.copyWith(
-                name: _nameController.text.trim(),
-                colorValue: _selectedColor.toARGB32(),
-                coverImagePath: _coverImagePath,
-              ));
+        if (_isShared) {
+          // Lista compartilhada — atualiza Supabase + coverImagePath local
+          final remote = await ref
+              .read(remoteCollectionsRepositoryProvider)
+              .getById(widget.collectionId!);
+          if (remote != null) {
+            await ref
+                .read(sharingNotifierProvider.notifier)
+                .updateSharedCollection(
+                  collection: remote.copyWith(
+                    name: _nameController.text.trim(),
+                    colorValue: _selectedColor.toARGB32(),
+                  ),
+                  coverImagePath: _coverImagePath,
+                );
+          }
+        } else {
+          // Lista local — salva no Isar
+          final existing = await ref
+              .read(collectionsRepositoryProvider)
+              .getById(widget.collectionId!);
+          if (existing != null) {
+            await ref
+                .read(collectionsNotifierProvider.notifier)
+                .updateCollection(existing.copyWith(
+                  name: _nameController.text.trim(),
+                  colorValue: _selectedColor.toARGB32(),
+                  coverImagePath: _coverImagePath,
+                ));
+          }
         }
       } else {
         await ref.read(collectionsNotifierProvider.notifier).create(
