@@ -194,7 +194,6 @@ class SupabaseSharingRepositoryImpl implements SharingRepository {
   Future<void> leaveCollection(String collectionRemoteId) async {
     final userId = _userId;
 
-    // Se for dono, deleta a coleção inteira (CASCADE remove membros e itens)
     final memberRow = await _client
         .from('collection_members')
         .select('role')
@@ -203,16 +202,34 @@ class SupabaseSharingRepositoryImpl implements SharingRepository {
         .maybeSingle();
 
     if (memberRow?['role'] == 'owner') {
+      // Dono saindo → deleta a coleção inteira (CASCADE remove membros e itens)
       await _client
           .from('shared_collections')
           .delete()
           .eq('id', collectionRemoteId);
-    } else {
+      return;
+    }
+
+    // Membro saindo → remove só sua entrada
+    await _client
+        .from('collection_members')
+        .delete()
+        .eq('collection_id', collectionRemoteId)
+        .eq('user_id', userId);
+
+    // Verifica se ainda existe algum owner na coleção.
+    // Se não houver, a coleção está órfã e deve ser deletada do banco.
+    final ownerRows = await _client
+        .from('collection_members')
+        .select('user_id')
+        .eq('collection_id', collectionRemoteId)
+        .eq('role', 'owner');
+
+    if ((ownerRows as List).isEmpty) {
       await _client
-          .from('collection_members')
+          .from('shared_collections')
           .delete()
-          .eq('collection_id', collectionRemoteId)
-          .eq('user_id', userId);
+          .eq('id', collectionRemoteId);
     }
   }
 }

@@ -48,6 +48,7 @@ class _CreateSharedCollectionPageState
   final _nameController = TextEditingController();
   Color _selectedColor = _kCollectionColors.first;
   String? _coverImagePath;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -138,9 +139,11 @@ class _CreateSharedCollectionPageState
   }
 
   Future<void> _submit() async {
-    try {
-      if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_isSubmitting) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    setState(() => _isSubmitting = true);
+    try {
       final collection = await ref
           .read(sharingNotifierProvider.notifier)
           .createSharedCollection(
@@ -150,13 +153,15 @@ class _CreateSharedCollectionPageState
           );
 
       if (mounted) {
-        final path = '/collection/${collection.remoteId}';
-        context.pop();
-        context.push(path, extra: collection);
+        context.pushReplacement(
+          '/collection/${collection.remoteId}',
+          extra: collection,
+        );
       }
     } catch (e, st) {
       debugPrint('ERRO ao criar lista compartilhada: $e\n$st');
       if (mounted) {
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceFirst('Exception: ', '')),
@@ -277,7 +282,7 @@ class _CreateSharedCollectionPageState
             const SizedBox(height: 32),
 
             FilledButton(
-              onPressed: loading ? null : _submit,
+              onPressed: (loading || _isSubmitting) ? null : _submit,
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(

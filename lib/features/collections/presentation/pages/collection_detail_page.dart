@@ -372,6 +372,12 @@ class CollectionDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(collection?.name ?? ''),
+        leading: context.canPop()
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/'),
+              ),
         actions: [
           if (collection?.isShared == true && collection?.inviteCode != null)
             IconButton(

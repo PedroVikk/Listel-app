@@ -18,6 +18,9 @@ abstract class SharingRepository {
   /// Stream reativo dos membros — atualiza em tempo real via Supabase Realtime.
   Stream<List<CollectionMember>> watchMembers(String collectionRemoteId);
 
-  /// Remove o usuário atual de uma coleção (ou deleta se for dono).
+  /// Remove o usuário atual de uma coleção.
+  /// - Se for dono: deleta a coleção inteira (CASCADE remove membros e itens).
+  /// - Se for membro: remove só sua entrada; se após a saída não restar nenhum
+  ///   owner, a coleção é deletada do banco (coleção órfã).
   Future<void> leaveCollection(String collectionRemoteId);
 }
