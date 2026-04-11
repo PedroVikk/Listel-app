@@ -143,7 +143,7 @@ class SettingsPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Feito por Pedro Victor, Pensado por Ines Gomides',
+                          'Criado por Ines Gomides, Desenvolvido por Pedro Victor',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

@@ -12,6 +12,8 @@ import 'core/router/app_routes.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/domain/entities/theme_settings.dart';
 import 'features/settings/presentation/providers/settings_provider.dart';
+import 'features/update/presentation/providers/update_provider.dart';
+import 'features/update/presentation/widgets/update_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +69,14 @@ class _WishNesitaAppState extends ConsumerState<WishNesitaApp> {
         _handleDeepLink(widget.coldStartUri!);
       });
     }
+
+    // Verifica atualização disponível após o primeiro frame
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final updateInfo = await ref.read(updateInfoProvider.future);
+      if (updateInfo != null && mounted) {
+        await UpdateDialog.showIfNeeded(context, updateInfo);
+      }
+    });
 
     // Hot start: app já estava aberto e recebeu um link
     _appLinks.uriLinkStream.listen(_handleDeepLink);
