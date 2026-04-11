@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static ThemeData light(Color primaryColor) {
@@ -23,6 +24,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      textTheme: GoogleFonts.nunitoTextTheme(),
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
