@@ -30,6 +30,9 @@ class SavedItemModel {
   late DateTime createdAt;
   late DateTime updatedAt;
 
+  // Migração automática: int não-nullable com default 0 → Isar usa 0 para registros antigos
+  int sortOrder = 0;
+
   // Campos de lista compartilhada — nullable → migração automática pelo Isar
   String? addedBy;
   String? purchasedBy;
@@ -46,6 +49,7 @@ class SavedItemModel {
         notes: notes,
         status: status,
         source: source,
+        sortOrder: sortOrder,
         createdAt: createdAt,
         updatedAt: updatedAt,
         addedBy: addedBy,
@@ -64,6 +68,7 @@ class SavedItemModel {
     ..notes = entity.notes
     ..status = entity.status
     ..source = entity.source
+    ..sortOrder = entity.sortOrder
     ..createdAt = entity.createdAt
     ..updatedAt = entity.updatedAt
     ..addedBy = entity.addedBy

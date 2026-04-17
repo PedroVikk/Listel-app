@@ -5,6 +5,7 @@ abstract interface class ItemsRepository {
   Future<SavedItem?> getById(String id);
   Future<void> save(SavedItem item);
   Future<void> delete(String id);
+  Future<void> reorder(List<String> orderedIds);
   Stream<List<SavedItem>> watchByCollection(String collectionId);
   Future<List<SavedItem>> searchByName(String query);
 }

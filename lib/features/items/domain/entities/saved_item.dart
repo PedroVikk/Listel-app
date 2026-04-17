@@ -14,6 +14,7 @@ class SavedItem {
   final String? notes;
   final ItemStatus status;
   final ItemSource source;
+  final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -36,6 +37,7 @@ class SavedItem {
     this.notes,
     required this.status,
     required this.source,
+    this.sortOrder = 0,
     required this.createdAt,
     required this.updatedAt,
     this.addedBy,
@@ -56,6 +58,7 @@ class SavedItem {
     String? notes,
     ItemStatus? status,
     ItemSource? source,
+    int? sortOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? addedBy,
@@ -73,6 +76,7 @@ class SavedItem {
       notes: notes ?? this.notes,
       status: status ?? this.status,
       source: source ?? this.source,
+      sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       addedBy: addedBy ?? this.addedBy,

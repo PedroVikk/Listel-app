@@ -1,0 +1,37 @@
+{
+  "id": "e9e67d4d-64c9-469d-8c7e-f3a0d87ffdfd",
+  "taskTitle": "CLAUDE.md skills documentation update",
+  "createdAt": 1776112239115,
+  "summary": "Added references to all available skills (`/tlc-spec-driven`, `/simplify`, `/loop`, `/schedule`, `/update-config`, `/keybindings-help`, `/publish`) in CLAUDE.md under a new \"Available Skills\" section. Each skill includes a brief description and usage examples to guide future Claude Code sessions.",
+  "files": [],
+  "modifiedFiles": [
+    "C:\\opa\\WishNesita\\CLAUDE.md"
+  ],
+  "keywords": [
+    "claude",
+    "skills",
+    "documentation",
+    "update",
+    "references",
+    "available",
+    "spec",
+    "driven",
+    "simplify",
+    "loop",
+    "schedule",
+    "config",
+    "keybindings",
+    "help",
+    "publish",
+    "under",
+    "section",
+    "skill",
+    "includes",
+    "brief",
+    "description",
+    "usage",
+    "examples",
+    "guide",
+    "future"
+  ]
+}

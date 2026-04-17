@@ -12,7 +12,7 @@ class ItemsRepositoryImpl implements ItemsRepository {
     final models = await _db.savedItemModels
         .where()
         .collectionIdEqualTo(collectionId)
-        .sortByCreatedAtDesc()
+        .sortBySortOrder()
         .findAll();
     return models.map((m) => m.toDomain()).toList();
   }
@@ -33,6 +33,22 @@ class ItemsRepositoryImpl implements ItemsRepository {
   }
 
   @override
+  Future<void> reorder(List<String> orderedIds) async {
+    await _db.writeTxn(() async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        final model = await _db.savedItemModels
+            .where()
+            .idEqualTo(orderedIds[i])
+            .findFirst();
+        if (model != null) {
+          model.sortOrder = i;
+          await _db.savedItemModels.put(model);
+        }
+      }
+    });
+  }
+
+  @override
   Future<void> delete(String id) async {
     await _db.writeTxn(() async {
       final model = await _db.savedItemModels.where().idEqualTo(id).findFirst();
@@ -46,7 +62,11 @@ class ItemsRepositoryImpl implements ItemsRepository {
         .where()
         .collectionIdEqualTo(collectionId)
         .watch(fireImmediately: true)
-        .map((models) => models.map((m) => m.toDomain()).toList());
+        .map((models) {
+      final sorted = [...models]
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      return sorted.map((m) => m.toDomain()).toList();
+    });
   }
 
   @override

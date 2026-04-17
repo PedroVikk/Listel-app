@@ -1,0 +1,48 @@
+{
+  "id": "71530819-0589-49f5-8957-90522c8ce3dd",
+  "taskTitle": "Publish skill creation and APK version automation",
+  "createdAt": 1776112237598,
+  "summary": "Created a `/publish` skill (`publish.md`) that interactively collects version bump info and release notes, then builds and uploads a new APK. Configured `settings.local.json` with the Supabase password reference. The skill guides the full release flow with pre-stored credentials.",
+  "files": [
+    "C:\\opa\\WishNesita/planning/task_21_in_app_update.md",
+    "C:\\opa\\WishNesita\\lib\\core\\services\\app_update_service.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\update\\presentation\\providers\\update_provider.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\update\\presentation\\widgets\\update_dialog.dart",
+    "C:\\opa\\WishNesita\\supabase\\migrations\\20260410000000_create_app_versions.sql",
+    "C:\\opa\\WishNesita\\scripts\\publish.sh",
+    "C:\\opa\\WishNesita\\lib\\main.dart",
+    "C:\\opa\\WishNesita\\lib\\core\\config\\app_config.dart"
+  ],
+  "modifiedFiles": [
+    "C:\\opa\\WishNesita\\.claude\\commands\\publish.md",
+    "C:/opa/WishNesita/.claude/commands/publish.md",
+    "C:\\opa\\WishNesita\\.claude\\settings.local.json"
+  ],
+  "keywords": [
+    "publish",
+    "skill",
+    "creation",
+    "version",
+    "automation",
+    "created",
+    "interactively",
+    "collects",
+    "bump",
+    "info",
+    "release",
+    "notes",
+    "builds",
+    "uploads",
+    "configured",
+    "settings",
+    "local",
+    "json",
+    "supabase",
+    "password",
+    "reference",
+    "guides",
+    "full",
+    "flow",
+    "stored"
+  ]
+}

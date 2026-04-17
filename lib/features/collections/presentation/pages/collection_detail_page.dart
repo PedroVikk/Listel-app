@@ -4,12 +4,123 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import '../../domain/entities/collection.dart';
 import '../providers/collections_provider.dart';
 import '../../../items/domain/entities/saved_item.dart';
+import '../../../items/domain/entities/collection_budget.dart';
 import '../../../items/presentation/providers/items_provider.dart';
 import '../../../items/presentation/providers/list_view_mode_provider.dart';
 import '../../../sharing/presentation/pages/invite_page.dart';
+
+final _brl = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
+class _BudgetCard extends StatefulWidget {
+  final CollectionBudget budget;
+  const _BudgetCard({required this.budget});
+
+  @override
+  State<_BudgetCard> createState() => _BudgetCardState();
+}
+
+class _BudgetCardState extends State<_BudgetCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final b = widget.budget;
+
+    if (b.totalAll == 0 && b.itemsWithoutPrice == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      child: Card(
+        elevation: 0,
+        color: cs.surfaceContainerLow,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined,
+                        size: 18, color: cs.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        b.totalPending > 0
+                            ? 'Total pendente: ${_brl.format(b.totalPending)}'
+                            : 'Tudo comprado!',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface,
+                            ),
+                      ),
+                    ),
+                    Icon(
+                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 20,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+                if (_expanded) ...[
+                  const SizedBox(height: 10),
+                  const Divider(height: 1),
+                  const SizedBox(height: 10),
+                  if (b.totalPurchased > 0)
+                    _row(context, cs, Icons.check_circle_outline,
+                        'Já comprado', _brl.format(b.totalPurchased),
+                        color: Colors.green),
+                  if (b.totalAll > 0)
+                    _row(context, cs, Icons.calculate_outlined,
+                        'Total geral', _brl.format(b.totalAll)),
+                  if (b.itemsWithoutPrice > 0)
+                    _row(context, cs, Icons.info_outline,
+                        '${b.itemsWithoutPrice} ${b.itemsWithoutPrice == 1 ? 'item sem preço' : 'itens sem preço'}',
+                        null,
+                        color: cs.onSurfaceVariant),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, ColorScheme cs, IconData icon, String label,
+      String? value, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: color ?? cs.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(label,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: color ?? cs.onSurfaceVariant)),
+          ),
+          if (value != null)
+            Text(value,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: color ?? cs.onSurface,
+                    )),
+        ],
+      ),
+    );
+  }
+}
 
 class CollectionDetailPage extends ConsumerWidget {
   final String collectionId;
@@ -100,8 +211,9 @@ class CollectionDetailPage extends ConsumerWidget {
   Widget _statusToggle(
     BuildContext context,
     WidgetRef ref,
-    SavedItem item,
-  ) {
+    SavedItem item, {
+    Color? color,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -115,7 +227,7 @@ class CollectionDetailPage extends ConsumerWidget {
             item.isPurchased
                 ? Icons.check_circle
                 : Icons.radio_button_unchecked,
-            color: Colors.white54,
+            color: color ?? Colors.white54,
             size: 18,
           ),
         ),
@@ -170,7 +282,10 @@ class CollectionDetailPage extends ConsumerWidget {
                       Positioned(
                         top: 2,
                         right: 2,
-                        child: _statusToggle(context, ref, item),
+                        child: _statusToggle(context, ref, item,
+                            color: item.isPurchased
+                                ? cs.primary
+                                : cs.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -252,7 +367,10 @@ class CollectionDetailPage extends ConsumerWidget {
                 Positioned(
                   top: 2,
                   right: 2,
-                  child: _statusToggle(context, ref, item),
+                  child: _statusToggle(context, ref, item,
+                      color: item.isPurchased
+                          ? cs.primary
+                          : cs.onSurfaceVariant),
                 ),
               ],
             ),
@@ -324,13 +442,76 @@ class CollectionDetailPage extends ConsumerWidget {
                     Positioned(
                       top: 6,
                       right: 6,
-                      child: _statusToggle(context, ref, item),
+                      child: _statusToggle(context, ref, item,
+                          color: item.isPurchased
+                              ? cs.primary
+                              : cs.onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  /// Lista — modo reordenável com drag handles
+  Widget _buildLista(
+      BuildContext context, WidgetRef ref, List<SavedItem> items,
+      ColorScheme cs) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: items.length,
+      onReorder: (oldIndex, newIndex) {
+        if (newIndex > oldIndex) newIndex--;
+        final reordered = [...items];
+        final moved = reordered.removeAt(oldIndex);
+        reordered.insert(newIndex, moved);
+        ref
+            .read(itemsNotifierProvider(collectionId).notifier)
+            .reorder(reordered.map((i) => i.id).toList());
+      },
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return ListTile(
+          key: ValueKey(item.id),
+          leading: SizedBox(
+            width: 48,
+            height: 48,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _buildImage(item, cs),
+            ),
+          ),
+          title: Text(
+            item.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: item.isPurchased
+                ? TextStyle(
+                    decoration: TextDecoration.lineThrough,
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                  )
+                : null,
+          ),
+          subtitle: item.price != null
+              ? Text('R\$ ${item.price!.toStringAsFixed(2)}',
+                  style: TextStyle(color: cs.primary, fontSize: 12))
+              : item.store != null
+                  ? Text(item.store!, maxLines: 1)
+                  : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _statusToggle(context, ref, item,
+                  color: item.isPurchased ? cs.primary : cs.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Icon(Icons.drag_handle, color: cs.onSurfaceVariant),
+            ],
+          ),
+          onTap: () => context.push('/item/${item.id}'),
         );
       },
     );
@@ -343,6 +524,7 @@ class CollectionDetailPage extends ConsumerWidget {
     final collectionsAsync = ref.watch(collectionsStreamProvider);
     final itemsAsync = ref.watch(itemsByCollectionProvider(collectionId));
     final viewMode = ref.watch(listViewModeProvider);
+    final budget = ref.watch(collectionBudgetProvider(collectionId));
     final cs = Theme.of(context).colorScheme;
 
     // Snackbar ao mudar de modo
@@ -436,11 +618,22 @@ class CollectionDetailPage extends ConsumerWidget {
               ),
             );
           }
-          return switch (viewMode) {
-            ListViewMode.galeria => _buildGaleria(context, ref, items, cs),
-            ListViewMode.shopping => _buildShopping(context, ref, items, cs),
-            ListViewMode.vitrine => _buildVitrine(context, ref, items, cs),
-          };
+          return Column(
+            children: [
+              _BudgetCard(budget: budget),
+              Expanded(
+                child: switch (viewMode) {
+                  ListViewMode.galeria =>
+                    _buildGaleria(context, ref, items, cs),
+                  ListViewMode.shopping =>
+                    _buildShopping(context, ref, items, cs),
+                  ListViewMode.vitrine =>
+                    _buildVitrine(context, ref, items, cs),
+                  ListViewMode.lista => _buildLista(context, ref, items, cs),
+                },
+              ),
+            ],
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(

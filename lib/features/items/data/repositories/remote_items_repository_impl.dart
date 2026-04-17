@@ -46,8 +46,19 @@ class RemoteItemsRepositoryImpl implements ItemsRepository {
         .from('shared_items')
         .select()
         .eq('collection_id', collectionId)
+        .order('sort_order')
         .order('created_at');
     return _mapRows(rows as List);
+  }
+
+  @override
+  Future<void> reorder(List<String> orderedIds) async {
+    for (var i = 0; i < orderedIds.length; i++) {
+      await _client
+          .from('shared_items')
+          .update({'sort_order': i})
+          .eq('id', orderedIds[i]);
+    }
   }
 
   @override
@@ -115,7 +126,7 @@ class RemoteItemsRepositoryImpl implements ItemsRepository {
           .from('shared_items')
           .stream(primaryKey: ['id'])
           .eq('collection_id', collectionId)
-          .order('created_at')
+          .order('sort_order')
           .asyncMap((rows) => _mapRows(rows))
           .listen(
             (data) => controller.add(data),

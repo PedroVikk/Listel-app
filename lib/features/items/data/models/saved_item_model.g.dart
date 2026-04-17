@@ -67,30 +67,35 @@ const SavedItemModelSchema = CollectionSchema(
       name: r'purchasedBy',
       type: IsarType.string,
     ),
-    r'source': PropertySchema(
+    r'sortOrder': PropertySchema(
       id: 10,
+      name: r'sortOrder',
+      type: IsarType.long,
+    ),
+    r'source': PropertySchema(
+      id: 11,
       name: r'source',
       type: IsarType.string,
       enumMap: _SavedItemModelsourceEnumValueMap,
     ),
     r'status': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'status',
       type: IsarType.string,
       enumMap: _SavedItemModelstatusEnumValueMap,
     ),
     r'store': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'store',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'url': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'url',
       type: IsarType.string,
     )
@@ -208,11 +213,12 @@ void _savedItemModelSerialize(
   writer.writeString(offsets[7], object.notes);
   writer.writeDouble(offsets[8], object.price);
   writer.writeString(offsets[9], object.purchasedBy);
-  writer.writeString(offsets[10], object.source.name);
-  writer.writeString(offsets[11], object.status.name);
-  writer.writeString(offsets[12], object.store);
-  writer.writeDateTime(offsets[13], object.updatedAt);
-  writer.writeString(offsets[14], object.url);
+  writer.writeLong(offsets[10], object.sortOrder);
+  writer.writeString(offsets[11], object.source.name);
+  writer.writeString(offsets[12], object.status.name);
+  writer.writeString(offsets[13], object.store);
+  writer.writeDateTime(offsets[14], object.updatedAt);
+  writer.writeString(offsets[15], object.url);
 }
 
 SavedItemModel _savedItemModelDeserialize(
@@ -233,15 +239,16 @@ SavedItemModel _savedItemModelDeserialize(
   object.notes = reader.readStringOrNull(offsets[7]);
   object.price = reader.readDoubleOrNull(offsets[8]);
   object.purchasedBy = reader.readStringOrNull(offsets[9]);
+  object.sortOrder = reader.readLong(offsets[10]);
   object.source =
-      _SavedItemModelsourceValueEnumMap[reader.readStringOrNull(offsets[10])] ??
+      _SavedItemModelsourceValueEnumMap[reader.readStringOrNull(offsets[11])] ??
           ItemSource.shared;
   object.status =
-      _SavedItemModelstatusValueEnumMap[reader.readStringOrNull(offsets[11])] ??
+      _SavedItemModelstatusValueEnumMap[reader.readStringOrNull(offsets[12])] ??
           ItemStatus.pending;
-  object.store = reader.readStringOrNull(offsets[12]);
-  object.updatedAt = reader.readDateTime(offsets[13]);
-  object.url = reader.readStringOrNull(offsets[14]);
+  object.store = reader.readStringOrNull(offsets[13]);
+  object.updatedAt = reader.readDateTime(offsets[14]);
+  object.url = reader.readStringOrNull(offsets[15]);
   return object;
 }
 
@@ -273,18 +280,20 @@ P _savedItemModelDeserializeProp<P>(
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
+      return (reader.readLong(offset)) as P;
+    case 11:
       return (_SavedItemModelsourceValueEnumMap[
               reader.readStringOrNull(offset)] ??
           ItemSource.shared) as P;
-    case 11:
+    case 12:
       return (_SavedItemModelstatusValueEnumMap[
               reader.readStringOrNull(offset)] ??
           ItemStatus.pending) as P;
-    case 12:
-      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
+      return (reader.readDateTime(offset)) as P;
+    case 15:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1921,6 +1930,62 @@ extension SavedItemModelQueryFilter
   }
 
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      sortOrderEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sortOrder',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      sortOrderGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sortOrder',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      sortOrderLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sortOrder',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
+      sortOrderBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sortOrder',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterFilterCondition>
       sourceEqualTo(
     ItemSource value, {
     bool caseSensitive = true,
@@ -2694,6 +2759,19 @@ extension SavedItemModelQuerySortBy
     });
   }
 
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> sortBySortOrder() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      sortBySortOrderDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> sortBySource() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'source', Sort.asc);
@@ -2902,6 +2980,19 @@ extension SavedItemModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> thenBySortOrder() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy>
+      thenBySortOrderDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QAfterSortBy> thenBySource() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'source', Sort.asc);
@@ -3038,6 +3129,13 @@ extension SavedItemModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SavedItemModel, SavedItemModel, QDistinct>
+      distinctBySortOrder() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sortOrder');
+    });
+  }
+
   QueryBuilder<SavedItemModel, SavedItemModel, QDistinct> distinctBySource(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3142,6 +3240,12 @@ extension SavedItemModelQueryProperty
       purchasedByProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'purchasedBy');
+    });
+  }
+
+  QueryBuilder<SavedItemModel, int, QQueryOperations> sortOrderProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sortOrder');
     });
   }
 

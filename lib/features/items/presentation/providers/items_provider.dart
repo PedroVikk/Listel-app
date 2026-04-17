@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/entities/saved_item.dart';
+import '../../domain/entities/collection_budget.dart';
 import '../../domain/repositories/items_repository.dart';
 import '../../data/repositories/items_repository_impl.dart';
 import '../../data/repositories/remote_items_repository_impl.dart';
@@ -75,6 +76,12 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
     return repo.getByCollection(collectionId);
   }
 
+  int get _nextSortOrder {
+    final items = state.valueOrNull ?? [];
+    if (items.isEmpty) return 0;
+    return items.map((i) => i.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+  }
+
   Future<void> createFromShare({
     required String collectionId,
     required String name,
@@ -96,6 +103,7 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       notes: notes,
       status: ItemStatus.pending,
       source: ItemSource.shared,
+      sortOrder: _nextSortOrder,
       createdAt: now,
       updatedAt: now,
     );
@@ -123,12 +131,18 @@ class ItemsNotifier extends FamilyAsyncNotifier<List<SavedItem>, String> {
       notes: notes,
       status: ItemStatus.pending,
       source: ItemSource.manual,
+      sortOrder: _nextSortOrder,
       createdAt: now,
       updatedAt: now,
     );
     final repo = await _repoAsync;
     await repo.save(item);
     ref.invalidateSelf();
+  }
+
+  Future<void> reorder(List<String> orderedIds) async {
+    final repo = await _repoAsync;
+    await repo.reorder(orderedIds);
   }
 
   Future<void> toggleStatus(SavedItem item) async {
@@ -175,6 +189,15 @@ final itemsNotifierProvider =
     AsyncNotifierProviderFamily<ItemsNotifier, List<SavedItem>, String>(
   ItemsNotifier.new,
 );
+
+// ─── Orçamento da coleção ─────────────────────────────────────────────────
+
+final collectionBudgetProvider =
+    Provider.family<CollectionBudget, String>((ref, collectionId) {
+  final items =
+      ref.watch(itemsByCollectionProvider(collectionId)).valueOrNull ?? [];
+  return CollectionBudget.fromItems(items);
+});
 
 // ─── Pesquisa global ──────────────────────────────────────────────────────
 

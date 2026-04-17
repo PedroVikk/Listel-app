@@ -2,29 +2,103 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/collections_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../collections/domain/entities/collection.dart';
 import '../../../sharing/presentation/providers/sharing_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
+
+  void _showProfileSheet(BuildContext context, WidgetRef ref,
+      String displayName, String email) {
+    final initials = displayName.trim().split(' ').where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase()).take(2).join();
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            CircleAvatar(
+              radius: 36,
+              backgroundColor:
+                  Theme.of(ctx).colorScheme.primaryContainer,
+              child: Text(
+                initials.isEmpty ? '?' : initials,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(ctx).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(displayName,
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(email,
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 28),
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                    Theme.of(ctx).colorScheme.errorContainer,
+                foregroundColor:
+                    Theme.of(ctx).colorScheme.onErrorContainer,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await ref
+                    .read(authRepositoryProvider)
+                    .signOut();
+              },
+              child: const Text('Sair da conta'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final localAsync = ref.watch(collectionsStreamProvider);
     final sharedAsync = ref.watch(sharedCollectionsStreamProvider);
-    final isLoggedIn = Supabase.instance.client.auth.currentUser != null;
+    final currentUser = ref.watch(currentUserProvider);
+    final isLoggedIn = currentUser != null;
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.account_circle_outlined),
+          icon: Icon(isLoggedIn
+              ? Icons.account_circle
+              : Icons.account_circle_outlined),
           onPressed: () {
-            final isLoggedIn =
-                Supabase.instance.client.auth.currentUser != null;
-            if (!isLoggedIn) context.push(AppRoutes.login);
+            if (isLoggedIn) {
+              _showProfileSheet(context, ref, currentUser.displayName,
+                  currentUser.email);
+            } else {
+              context.push(AppRoutes.login);
+            }
           },
         ),
         title: const Text('Minhas Listas'),
@@ -53,18 +127,59 @@ class HomePage extends ConsumerWidget {
           return CustomScrollView(
             slivers: [
               if (local.isNotEmpty) ...[
-                _SectionHeader(title: 'Minhas listas'),
+                const _SectionHeader(title: 'Minhas listas'),
                 _CollectionGrid(collections: local, isShared: false),
               ],
               if (shared.isNotEmpty) ...[
-                _SectionHeader(title: 'Listas compartilhadas'),
+                const _SectionHeader(title: 'Listas compartilhadas'),
                 _CollectionGrid(collections: shared, isShared: true),
               ],
-              // Espaço para o FAB não sobrepor o último item
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         },
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: 0,
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 1:
+              context.push(AppRoutes.search);
+            case 2:
+              context.push(AppRoutes.settings);
+            case 3:
+              final user = currentUser;
+              if (user != null) {
+                _showProfileSheet(
+                    context, ref, user.displayName, user.email);
+              } else {
+                context.push(AppRoutes.login);
+              }
+          }
+        },
+        destinations: [
+          const NavigationDestination(
+            icon: Icon(Icons.collections_bookmark_outlined),
+            selectedIcon: Icon(Icons.collections_bookmark),
+            label: 'Início',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Buscar',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Config.',
+          ),
+          NavigationDestination(
+            icon: Icon(isLoggedIn
+                ? Icons.account_circle
+                : Icons.account_circle_outlined),
+            label: isLoggedIn ? 'Perfil' : 'Entrar',
+          ),
+        ],
       ),
       floatingActionButton: _HomeFab(
         onCreateLocal: () => context.push(AppRoutes.createCollection),
@@ -81,7 +196,7 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-// ─── FAB com duas opções ───────────────────────────────────────────────────
+// ─── FAB expandível ──────────────────────────────────────────────────────────
 
 class _HomeFab extends StatefulWidget {
   final VoidCallback onCreateLocal;
@@ -223,9 +338,13 @@ class _MiniAction extends StatelessWidget {
                 ),
               ],
             ),
-            child: Text(label,
-                style: TextStyle(
-                    color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           FloatingActionButton.small(
@@ -241,7 +360,7 @@ class _MiniAction extends StatelessWidget {
   }
 }
 
-// ─── Seção e Grid ──────────────────────────────────────────────────────────
+// ─── Seção e Grid ─────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -285,7 +404,6 @@ class _CollectionGrid extends StatelessWidget {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final collection = collections[index];
-            // Shared usa remoteId como ID de navegação
             final navId = isShared
                 ? (collection.remoteId ?? collection.id)
                 : collection.id;
@@ -356,7 +474,6 @@ class _CollectionCard extends ConsumerWidget {
     final color = Color(collection.colorValue);
     final lum = color.computeLuminance();
     final isVeryDark = lum < 0.05;
-    // Com foto de capa o gradiente escuro garante contraste — texto sempre branco
     final textColor = collection.coverImagePath != null
         ? Colors.white
         : (lum > 0.5 ? Colors.black87 : Colors.white);
@@ -383,7 +500,6 @@ class _CollectionCard extends ConsumerWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Foto de capa (se existir)
               if (collection.coverImagePath != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -393,7 +509,6 @@ class _CollectionCard extends ConsumerWidget {
                     errorBuilder: (_, _, _) => const SizedBox.shrink(),
                   ),
                 ),
-              // Gradiente de sobressaída — cobre a metade inferior do card
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -425,7 +540,8 @@ class _CollectionCard extends ConsumerWidget {
                                     : '?'),
                             style: TextStyle(
                               fontSize: 28,
-                              color: collection.emoji == null ? textColor : null,
+                              color:
+                                  collection.emoji == null ? textColor : null,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -457,7 +573,7 @@ class _CollectionCard extends ConsumerWidget {
   }
 }
 
-// ─── Empty state ───────────────────────────────────────────────────────────
+// ─── Empty state ──────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final bool isLoggedIn;

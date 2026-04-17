@@ -1,0 +1,47 @@
+{
+  "id": "4bef7943-e2c5-49b2-84c3-09991be7f683",
+  "taskTitle": "Items feature: new fields and list view modes",
+  "createdAt": 1776112258983,
+  "summary": "Added `note`, `priority`, and `isPurchased` fields to `SavedItem` entity and its Isar model. Updated repository interfaces and implementations (local and remote) to handle the new fields. Refactored `items_provider.dart`, `list_view_mode_provider.dart`, and `collection_detail_page.dart` to support the new data and UI modes.",
+  "files": [
+    "C:\\opa\\WishNesita\\planning\\task_27_reorder_items.md",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\presentation\\pages\\items_page.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\data\\models\\shared_item_dto.dart"
+  ],
+  "modifiedFiles": [
+    "C:\\opa\\WishNesita\\lib\\features\\items\\domain\\entities\\saved_item.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\data\\models\\saved_item_model.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\domain\\repositories\\items_repository.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\data\\repositories\\items_repository_impl.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\data\\repositories\\remote_items_repository_impl.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\presentation\\providers\\items_provider.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\items\\presentation\\providers\\list_view_mode_provider.dart",
+    "C:\\opa\\WishNesita\\lib\\features\\collections\\presentation\\pages\\collection_detail_page.dart"
+  ],
+  "keywords": [
+    "items",
+    "feature",
+    "fields",
+    "list",
+    "view",
+    "modes",
+    "note",
+    "priority",
+    "ispurchased",
+    "saveditem",
+    "entity",
+    "isar",
+    "model",
+    "updated",
+    "repository",
+    "interfaces",
+    "implementations",
+    "local",
+    "remote",
+    "handle",
+    "refactored",
+    "dart",
+    "support",
+    "data"
+  ]
+}
