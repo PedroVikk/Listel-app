@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Liste - Sign Up</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#787676",
+                        "on-secondary-container": "#80273c",
+                        "on-error-container": "#510017",
+                        "surface-dim": "#d6d4d3",
+                        "secondary-fixed": "#ffc2ca",
+                        "on-tertiary-fixed-variant": "#3800b4",
+                        "error-dim": "#a70138",
+                        "on-error": "#ffefef",
+                        "secondary-dim": "#8b2f44",
+                        "secondary": "#9a3b4f",
+                        "primary": "#b90034",
+                        "surface-bright": "#f9f6f5",
+                        "inverse-primary": "#ff5167",
+                        "on-surface-variant": "#5c5b5b",
+                        "background": "#f9f6f5",
+                        "on-secondary-fixed": "#66122a",
+                        "surface-variant": "#dfdcdc",
+                        "on-primary-container": "#4e0010",
+                        "primary-fixed-dim": "#ff586b",
+                        "on-tertiary-container": "#2f009c",
+                        "on-background": "#2f2f2e",
+                        "on-tertiary-fixed": "#170059",
+                        "tertiary-fixed-dim": "#a595ff",
+                        "on-tertiary": "#f6f0ff",
+                        "on-primary-fixed": "#000000",
+                        "tertiary-dim": "#4e0bec",
+                        "secondary-container": "#ffc2ca",
+                        "outline-variant": "#afadac",
+                        "on-secondary-fixed-variant": "#8c3045",
+                        "on-secondary": "#ffeff0",
+                        "secondary-fixed-dim": "#ffaeba",
+                        "primary-dim": "#a2002d",
+                        "inverse-on-surface": "#9e9c9c",
+                        "error-container": "#f74b6d",
+                        "primary-fixed": "#ff7480",
+                        "on-primary": "#ffefef",
+                        "surface": "#f9f6f5",
+                        "on-primary-fixed-variant": "#600016",
+                        "surface-container-low": "#f3f0ef",
+                        "surface-container": "#eae7e7",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#5a2af7",
+                        "tertiary-container": "#b3a5ff",
+                        "surface-tint": "#b90034",
+                        "primary-container": "#ff7480",
+                        "tertiary-fixed": "#b3a5ff",
+                        "surface-container-highest": "#dfdcdc",
+                        "inverse-surface": "#0e0e0e",
+                        "error": "#b41340",
+                        "surface-container-high": "#e4e2e1",
+                        "on-surface": "#2f2f2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen antialiased flex flex-col justify-center items-center p-6">
+<!-- Content Canvas -->
+<div class="w-full max-w-md mx-auto flex flex-col gap-12 relative z-10">
+<!-- Header / Logo -->
+<div class="flex flex-col items-center gap-4 mt-8">
+<h1 class="font-headline font-black text-4xl tracking-tighter text-primary">Liste</h1>
+<h2 class="font-headline font-bold text-2xl text-on-surface">Criar conta</h2>
+<p class="font-body text-on-surface-variant text-center px-4">Junte-se a nós e comece a curar sua lista de desejos.</p>
+</div>
+<!-- Form Area (Soft Layering) -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col gap-6 w-full shadow-sm">
+<div class="flex flex-col gap-4">
+<!-- Input: Nome Completo -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-sm font-medium text-on-surface px-2" for="nome">Nome Completo</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline-variant">person</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-4 pl-12 pr-4 text-on-surface placeholder:text-outline-variant focus:ring-0 focus:bg-surface-container-highest focus:ring-2 focus:ring-primary focus:ring-opacity-15 transition-all outline-none font-body" id="nome" placeholder="Seu nome" type="text"/>
+</div>
+</div>
+<!-- Input: @usuário -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-sm font-medium text-on-surface px-2" for="usuario">@usuário</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline-variant">alternate_email</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-4 pl-12 pr-4 text-on-surface placeholder:text-outline-variant focus:ring-0 focus:bg-surface-container-highest focus:ring-2 focus:ring-primary focus:ring-opacity-15 transition-all outline-none font-body" id="usuario" placeholder="seu_usuario" type="text"/>
+</div>
+</div>
+<!-- Input: E-mail -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-sm font-medium text-on-surface px-2" for="email">E-mail</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline-variant">mail</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-4 pl-12 pr-4 text-on-surface placeholder:text-outline-variant focus:ring-0 focus:bg-surface-container-highest focus:ring-2 focus:ring-primary focus:ring-opacity-15 transition-all outline-none font-body" id="email" placeholder="seu@email.com" type="email"/>
+</div>
+</div>
+<!-- Input: Senha -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label text-sm font-medium text-on-surface px-2" for="senha">Senha</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline-variant">lock</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-4 pl-12 pr-12 text-on-surface placeholder:text-outline-variant focus:ring-0 focus:bg-surface-container-highest focus:ring-2 focus:ring-primary focus:ring-opacity-15 transition-all outline-none font-body" id="senha" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 text-outline-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold py-4 rounded-full shadow-[0_12px_32px_rgba(185,0,52,0.08)] active:scale-95 transition-transform mt-2">
+                Criar conta
+            </button>
+</div>
+<!-- Toggle to Login -->
+<div class="flex justify-center items-center gap-2 mb-8">
+<span class="font-body text-on-surface-variant">Já tem uma conta?</span>
+<button class="font-headline font-bold text-primary hover:text-primary-dim transition-colors bg-transparent border-none">
+                Entrar
+            </button>
+</div>
+</div>
+</body></html>

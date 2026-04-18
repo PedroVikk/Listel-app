@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Salvar Produto</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#eae7e7",
+                      "inverse-primary": "#ff5167",
+                      "on-secondary": "#ffeff0",
+                      "surface-container-high": "#e4e2e1",
+                      "surface-variant": "#dfdcdc",
+                      "on-surface": "#2f2f2e",
+                      "surface-bright": "#f9f6f5",
+                      "on-secondary-fixed-variant": "#8c3045",
+                      "primary": "#b90034",
+                      "on-primary": "#ffefef",
+                      "error-container": "#f74b6d",
+                      "on-tertiary-fixed": "#170059",
+                      "on-tertiary-container": "#2f009c",
+                      "primary-container": "#ff7480",
+                      "surface": "#f9f6f5",
+                      "tertiary-fixed": "#b3a5ff",
+                      "primary-dim": "#a2002d",
+                      "surface-container-highest": "#dfdcdc",
+                      "outline": "#787676",
+                      "on-background": "#2f2f2e",
+                      "on-primary-container": "#4e0010",
+                      "tertiary": "#5a2af7",
+                      "on-tertiary": "#f6f0ff",
+                      "background": "#f9f6f5",
+                      "secondary-container": "#ffc2ca",
+                      "on-secondary-container": "#80273c",
+                      "error": "#b41340",
+                      "inverse-surface": "#0e0e0e",
+                      "on-primary-fixed": "#000000",
+                      "on-error-container": "#510017",
+                      "surface-tint": "#b90034",
+                      "secondary-fixed": "#ffc2ca",
+                      "primary-fixed-dim": "#ff586b",
+                      "on-tertiary-fixed-variant": "#3800b4",
+                      "tertiary-dim": "#4e0bec",
+                      "on-primary-fixed-variant": "#600016",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-low": "#f3f0ef",
+                      "secondary": "#9a3b4f",
+                      "on-secondary-fixed": "#66122a",
+                      "error-dim": "#a70138",
+                      "on-surface-variant": "#5c5b5b",
+                      "secondary-fixed-dim": "#ffaeba",
+                      "secondary-dim": "#8b2f44",
+                      "outline-variant": "#afadac",
+                      "tertiary-fixed-dim": "#a595ff",
+                      "on-error": "#ffefef",
+                      "inverse-on-surface": "#9e9c9c",
+                      "primary-fixed": "#ff7480",
+                      "tertiary-container": "#b3a5ff",
+                      "surface-dim": "#d6d4d3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Inter"
+                      ]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+      </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col">
+<!-- TopAppBar (Transactional - Hidden Nav Shell) -->
+<header class="fixed top-0 w-full z-50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl bg-zinc-100/50 dark:bg-zinc-900/50 flex justify-between items-center px-6 py-4 w-full">
+<button class="text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-50">Liste</h1>
+<button class="text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="check">check</span>
+</button>
+</header>
+<main class="flex-grow pt-24 px-6 pb-32 flex flex-col gap-6 max-w-md mx-auto w-full">
+<!-- Product Image Preview -->
+<div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-surface-container-low shadow-sm">
+<img alt="Red Nike sneaker" class="w-full h-full object-cover" data-alt="a vibrant red Nike sneaker floating against a clean soft pastel studio background with dramatic studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRoRORLjG3hFCD-8k0nDwYH5SMi_I7LJ-LgTHfZ1pxRgIVHy7vHMsm85DQmBUXZhdbw765Q02XPxi8N8RS7mIFn3ZtjCKDLX66pMtBYuyGDa7peiU61aw5FrPsoeQ3fsm74yzp7K5Y0MVoIbC_JTCwBknDT4FspxiBlXkev50x-GU0lRvsDqg_4dF0Zy8rzSFISs3cFYrODRa-UPMuqXlTPMqfn_PAqH9PJlMzMx2dQmY13JRDkJYpgBz7AKhMlhUYsx6b7REVmK0"/>
+<div class="absolute top-4 right-4 bg-surface-container-lowest/80 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant" data-icon="link">link</span>
+<span class="font-label text-xs font-medium text-on-surface-variant">Mercado Livre</span>
+</div>
+</div>
+<!-- Form Fields -->
+<form class="flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<label class="font-headline text-sm font-semibold text-on-surface ml-2" for="product-name">Nome do produto</label>
+<input class="w-full bg-surface-container-low border-transparent focus:border-primary focus:bg-surface-container-highest focus:ring-0 rounded-lg px-6 py-4 font-body text-base text-on-surface transition-all duration-200 placeholder:text-outline-variant shadow-sm" id="product-name" placeholder="Nome do produto" type="text" value="Tênis Nike Revolution 6 Next Nature Masculino"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-headline text-sm font-semibold text-on-surface ml-2" for="product-price">Preço (R$)</label>
+<input class="w-full bg-surface-container-low border-transparent focus:border-primary focus:bg-surface-container-highest focus:ring-0 rounded-lg px-6 py-4 font-body text-base text-on-surface transition-all duration-200 placeholder:text-outline-variant shadow-sm" id="product-price" placeholder="0,00" type="text" value="249,90"/>
+</div>
+<!-- Folder Selection -->
+<div class="flex flex-col gap-3 mt-2">
+<h2 class="font-headline text-sm font-semibold text-on-surface ml-2">Salvar em qual pasta?</h2>
+<div class="flex flex-wrap gap-2">
+<button class="bg-primary/10 text-primary border border-primary/20 rounded-full px-5 py-2 font-label text-sm font-medium transition-all hover:bg-primary/20" type="button">
+                        Milena
+                    </button>
+<button class="bg-surface-container-low text-on-surface-variant rounded-full px-5 py-2 font-label text-sm font-medium transition-all hover:bg-surface-container-high" type="button">
+                        Tudo certo pra vocês
+                    </button>
+<button class="bg-surface-container-low text-on-surface-variant rounded-full px-5 py-2 font-label text-sm font-medium transition-all hover:bg-surface-container-high" type="button">
+                        Xuxu
+                    </button>
+<button class="bg-surface-container-low text-on-surface-variant rounded-full px-4 py-2 flex items-center justify-center transition-all hover:bg-surface-container-high" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</form>
+</main>
+<!-- Fixed Bottom Action -->
+<div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-surface via-surface to-transparent z-40 pb-8">
+<div class="max-w-md mx-auto">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-white rounded-full py-4 font-headline text-base font-bold shadow-[0_12px_32px_rgba(185,0,52,0.2)] active:scale-95 transition-all duration-200">
+                Salvar produto
+            </button>
+</div>
+</div>
+</body></html>

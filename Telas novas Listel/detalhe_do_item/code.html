@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Item Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#8c3045",
+                        "on-tertiary": "#f6f0ff",
+                        "inverse-surface": "#0e0e0e",
+                        "on-tertiary-container": "#2f009c",
+                        "tertiary": "#5a2af7",
+                        "secondary-dim": "#8b2f44",
+                        "on-primary-container": "#4e0010",
+                        "primary-container": "#ff7480",
+                        "on-surface-variant": "#5c5b5b",
+                        "tertiary-container": "#b3a5ff",
+                        "tertiary-fixed": "#b3a5ff",
+                        "surface-dim": "#d6d4d3",
+                        "surface-container": "#eae7e7",
+                        "tertiary-dim": "#4e0bec",
+                        "surface-container-highest": "#dfdcdc",
+                        "outline": "#787676",
+                        "secondary-fixed-dim": "#ffaeba",
+                        "primary-dim": "#a2002d",
+                        "inverse-primary": "#ff5167",
+                        "error": "#b41340",
+                        "surface-container-low": "#f3f0ef",
+                        "on-error-container": "#510017",
+                        "on-tertiary-fixed": "#170059",
+                        "on-background": "#2f2f2e",
+                        "on-primary": "#ffefef",
+                        "on-primary-fixed-variant": "#600016",
+                        "secondary-fixed": "#ffc2ca",
+                        "tertiary-fixed-dim": "#a595ff",
+                        "on-tertiary-fixed-variant": "#3800b4",
+                        "primary-fixed-dim": "#ff586b",
+                        "surface-variant": "#dfdcdc",
+                        "surface-bright": "#f9f6f5",
+                        "on-primary-fixed": "#000000",
+                        "inverse-on-surface": "#9e9c9c",
+                        "primary": "#b90034",
+                        "surface-container-high": "#e4e2e1",
+                        "secondary": "#9a3b4f",
+                        "on-secondary-container": "#80273c",
+                        "surface-tint": "#b90034",
+                        "on-surface": "#2f2f2e",
+                        "on-error": "#ffefef",
+                        "surface": "#f9f6f5",
+                        "on-secondary-fixed": "#66122a",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f9f6f5",
+                        "error-dim": "#a70138",
+                        "error-container": "#f74b6d",
+                        "outline-variant": "#afadac",
+                        "primary-fixed": "#ff7480",
+                        "secondary-container": "#ffc2ca",
+                        "on-secondary": "#ffeff0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .bg-glass {
+            background-color: theme('colors.surface-container-low' / 70%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, theme('colors.primary'), theme('colors.primary-container'));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, theme('colors.primary'), theme('colors.primary-container'));
+        }
+        .shadow-ambient {
+            box-shadow: 0 12px 32px -8px theme('colors.primary' / 8%);
+        }
+        /* Suppress navigation for detail view as per intent rules */
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-glass no-border tonal-shift flex justify-between items-center px-6 h-16 w-full">
+<button aria-label="Go back" class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<h1 class="font-headline font-bold text-lg tracking-tight text-on-surface">Detalhe do item</h1>
+<button aria-label="Delete item" class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-highest transition-colors text-error">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-6">
+<!-- Hero Image Container -->
+<div class="relative w-full h-[240px] rounded-lg overflow-hidden bg-surface-container-highest shadow-ambient">
+<img alt="Product Hero Image" class="w-full h-full object-cover" data-alt="high quality bright red Nike sneaker resting on a clean white plinth against a soft pastel grey background with natural studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTSuYNgO6r9dTDQqSxC5uK9rEdcZyJq5lR7rE2VNZ4YxqvNAwKxhrylVh3KcNEUQtRJNK9PF-Rpkm12G6PhYxbirM46e1Yntfeen-JvdpV00EREmiRht_sjhGvUJUa_RXmg_Zx5zGscA1ZPgXvwKSEl-EwsUafcA57XhLdWsc3t4aWn6yGki6BhaS8MyVMJxDMKqWBkguumSxW9irDenZk8fcITstfc8rtvwu4aIr8t0xQkMygGlW8PPvd-qeqsLaAe5pLSBKlk9k"/>
+<!-- Floating Badges Layer -->
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="px-3 py-1 bg-primary-fixed-dim text-on-primary font-label text-xs font-bold rounded-full uppercase tracking-wider shadow-ambient">
+                    Pendente
+                </span>
+</div>
+<div class="absolute bottom-4 right-4">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-lowest/90 backdrop-blur-md rounded-full text-xs font-label font-semibold text-on-surface shadow-ambient">
+<span class="material-symbols-outlined text-[16px]">storefront</span>
+                    Loja Nike
+                </div>
+</div>
+</div>
+<!-- Detail Header -->
+<section class="space-y-2 mt-8">
+<h2 class="font-headline text-3xl font-bold leading-tight text-on-surface tracking-tight">Nike Air Max Pre-Day</h2>
+<div class="flex items-baseline gap-2">
+<p class="font-headline text-4xl font-extrabold text-gradient">R$ 699,99</p>
+<p class="font-body text-sm text-on-surface-variant line-through">R$ 899,99</p>
+</div>
+</section>
+<!-- Observations -->
+<section class="p-6 bg-surface-container-lowest rounded-lg shadow-sm mt-8 space-y-3">
+<h3 class="font-headline text-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-dim">notes</span>
+                Observações
+            </h3>
+<p class="font-body text-on-surface-variant leading-relaxed text-sm">
+                Tamanho 42. Preferência pela cor vermelha, mas se não tiver, pode ser o modelo preto com detalhes em branco. Aguardar a Black Friday para ver se o preço baixa mais.
+            </p>
+</section>
+<!-- Action Stack -->
+<section class="flex flex-col gap-4 mt-12 pt-8 border-t-[1px] border-surface-container-highest border-opacity-15">
+<!-- Primary Action -->
+<button class="w-full bg-gradient-primary text-on-primary font-headline font-bold text-base py-4 rounded-full shadow-ambient hover:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Marcar como comprado
+            </button>
+<!-- Secondary Actions Row -->
+<div class="flex gap-4">
+<button class="flex-1 bg-surface-container-high text-primary font-label font-semibold py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+                    Ver produto
+                </button>
+<button class="flex-1 bg-surface-container-high text-primary font-label font-semibold py-3.5 rounded-full flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+                    Mover lista
+                </button>
+</div>
+</section>
+</main>
+</body></html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - Liste</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#787676",
+                        "on-secondary-container": "#80273c",
+                        "on-error-container": "#510017",
+                        "surface-dim": "#d6d4d3",
+                        "secondary-fixed": "#ffc2ca",
+                        "on-tertiary-fixed-variant": "#3800b4",
+                        "error-dim": "#a70138",
+                        "on-error": "#ffefef",
+                        "secondary-dim": "#8b2f44",
+                        "secondary": "#9a3b4f",
+                        "primary": "#b90034",
+                        "surface-bright": "#f9f6f5",
+                        "inverse-primary": "#ff5167",
+                        "on-surface-variant": "#5c5b5b",
+                        "background": "#f9f6f5",
+                        "on-secondary-fixed": "#66122a",
+                        "surface-variant": "#dfdcdc",
+                        "on-primary-container": "#4e0010",
+                        "primary-fixed-dim": "#ff586b",
+                        "on-tertiary-container": "#2f009c",
+                        "on-background": "#2f2f2e",
+                        "on-tertiary-fixed": "#170059",
+                        "tertiary-fixed-dim": "#a595ff",
+                        "on-tertiary": "#f6f0ff",
+                        "on-primary-fixed": "#000000",
+                        "tertiary-dim": "#4e0bec",
+                        "secondary-container": "#ffc2ca",
+                        "outline-variant": "#afadac",
+                        "on-secondary-fixed-variant": "#8c3045",
+                        "on-secondary": "#ffeff0",
+                        "secondary-fixed-dim": "#ffaeba",
+                        "primary-dim": "#a2002d",
+                        "inverse-on-surface": "#9e9c9c",
+                        "error-container": "#f74b6d",
+                        "primary-fixed": "#ff7480",
+                        "on-primary": "#ffefef",
+                        "surface": "#f9f6f5",
+                        "on-primary-fixed-variant": "#600016",
+                        "surface-container-low": "#f3f0ef",
+                        "surface-container": "#eae7e7",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#5a2af7",
+                        "tertiary-container": "#b3a5ff",
+                        "surface-tint": "#b90034",
+                        "primary-container": "#ff7480",
+                        "tertiary-fixed": "#b3a5ff",
+                        "surface-container-highest": "#dfdcdc",
+                        "inverse-surface": "#0e0e0e",
+                        "error": "#b41340",
+                        "surface-container-high": "#e4e2e1",
+                        "on-surface": "#2f2f2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+            font-family: theme('fontFamily.body');
+        }
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, theme('colors.primary'), theme('colors.primary-container'));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6 bg-surface relative overflow-hidden">
+<!-- Decorative Ambient Background Elements -->
+<div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary-container opacity-20 blur-[80px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-secondary-container opacity-30 blur-[100px] pointer-events-none"></div>
+<div class="w-full max-w-md flex flex-col z-10">
+<!-- Header Section -->
+<div class="flex flex-col items-center mb-12">
+<h1 class="font-headline font-black text-5xl text-primary tracking-tighter mb-6">Liste</h1>
+<h2 class="font-headline font-bold text-3xl text-on-surface mb-2">Boas-vindas</h2>
+<p class="font-body text-on-surface-variant text-base text-center">Entre para curar e organizar seus desejos.</p>
+</div>
+<!-- Login Form -->
+<form class="flex flex-col gap-6 w-full">
+<!-- Email/Username Input -->
+<div class="flex flex-col gap-2">
+<label class="font-label text-sm font-semibold text-on-surface-variant ml-2" for="username">E-mail ou @usuário</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant z-10" data-icon="person">person</span>
+<input class="w-full bg-surface-container-low text-on-surface rounded-lg py-4 pl-12 pr-4 outline-none transition-all duration-300 focus:bg-surface-container-highest focus:ring-1 focus:ring-primary focus:ring-opacity-15 placeholder:text-outline-variant font-body" id="username" placeholder="Seu e-mail ou @usuário" type="text"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="flex flex-col gap-2">
+<label class="font-label text-sm font-semibold text-on-surface-variant ml-2" for="password">Senha</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant z-10" data-icon="lock">lock</span>
+<input class="w-full bg-surface-container-low text-on-surface rounded-lg py-4 pl-12 pr-4 outline-none transition-all duration-300 focus:bg-surface-container-highest focus:ring-1 focus:ring-primary focus:ring-opacity-15 placeholder:text-outline-variant font-body" id="password" placeholder="Sua senha secreta" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined" data-icon="visibility_off">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Forgot Password Link -->
+<div class="flex justify-end mt-[-8px]">
+<a class="font-label text-sm font-medium text-primary hover:text-primary-dim transition-colors" href="#">Esqueci minha senha</a>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full btn-primary-gradient text-on-primary font-headline font-bold text-lg py-4 rounded-full shadow-[0_12px_32px_-4px_rgba(185,0,52,0.25)] hover:opacity-90 active:scale-95 transition-all duration-200 mt-2" type="button">
+                Entrar
+            </button>
+</form>
+<!-- Toggle to Sign Up -->
+<div class="mt-12 flex flex-col items-center gap-4">
+<p class="font-body text-on-surface-variant">Ainda não tem uma conta?</p>
+<button class="bg-surface-container-high text-primary font-headline font-semibold text-base py-3 px-8 rounded-full hover:bg-surface-variant active:scale-95 transition-all duration-200" type="button">
+                Criar conta
+            </button>
+</div>
+</div>
+</body></html>
