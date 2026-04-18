@@ -9,9 +9,12 @@ abstract class AppRoutes {
   static const createItem = '/collection/:collectionId/item/create';
   static const shareReceived = '/share-received';
   static const settings = '/settings';
+  static const profile = '/profile';
 
   // Auth
   static const login = '/auth/login';
+  static const signup = '/auth/signup';
+  static const resetPassword = '/auth/reset-password';
 
   static const search = '/search';
 
