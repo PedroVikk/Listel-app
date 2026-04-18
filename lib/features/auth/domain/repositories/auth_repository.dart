@@ -12,8 +12,24 @@ abstract class AuthRepository {
   Future<void> signUpWithEmail(
     String email,
     String password,
-    String displayName,
-  );
+    String displayName, {
+    required String username,
+  });
+
+  /// Verifica se um `username` (normalizado para lowercase) já está em uso.
+  Future<bool> isUsernameAvailable(String username);
 
   Future<void> signOut();
+
+  /// Envia e-mail de redefinição de senha para o endereço informado.
+  Future<void> resetPasswordForEmail(String email);
+
+  /// Atualiza o displayName do usuário.
+  Future<void> updateDisplayName(String newDisplayName);
+
+  /// Atualiza o username do usuário.
+  Future<void> updateUsername(String newUsername);
+
+  /// Faz upload do avatar para Supabase Storage e atualiza o perfil.
+  Future<String> uploadAvatarAndUpdate(String filePath);
 }

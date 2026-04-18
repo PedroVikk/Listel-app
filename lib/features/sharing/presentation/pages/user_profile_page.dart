@@ -1,10 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class UserProfilePage extends ConsumerWidget {
@@ -13,7 +10,6 @@ class UserProfilePage extends ConsumerWidget {
   void _editAvatarDialog(
     BuildContext context,
     WidgetRef ref,
-    AppUser currentUser,
   ) {
     showDialog(
       context: context,
@@ -32,26 +28,18 @@ class UserProfilePage extends ConsumerWidget {
               final pickedFile =
                   await picker.pickImage(source: ImageSource.gallery);
 
-              if (pickedFile != null) {
+              if (pickedFile != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Enviando avatar...')),
+                );
+
                 try {
-                  final appDir = await getApplicationDocumentsDirectory();
-                  final avatarDir =
-                      Directory('${appDir.path}/avatars');
-                  if (!await avatarDir.exists()) {
-                    await avatarDir.create(recursive: true);
-                  }
-
-                  final filename =
-                      'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                  final savedFile = await File(pickedFile.path)
-                      .copy('${avatarDir.path}/$filename');
-
-                  // Atualiza AppUser com novo avatarUrl
-                  currentUser.copyWith(avatarUrl: savedFile.path);
+                  final authRepo = ref.read(authRepositoryProvider);
+                  await authRepo.uploadAvatarAndUpdate(pickedFile.path);
 
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Avatar atualizado')),
+                      const SnackBar(content: Text('Avatar atualizado com sucesso!')),
                     );
                     ref.invalidate(userProfileProvider);
                   }
@@ -99,7 +87,7 @@ class UserProfilePage extends ConsumerWidget {
                 avatarUrl: profile.user.avatarUrl,
                 displayName: profile.user.displayName,
                 onEditPressed: () =>
-                    _editAvatarDialog(context, ref, profile.user),
+                    _editAvatarDialog(context, ref),
               ),
               const SizedBox(height: 24),
               // User info section
@@ -203,10 +191,10 @@ class _AvatarSection extends StatelessWidget {
             radius: 52,
             backgroundColor:
                 Theme.of(context).colorScheme.primaryContainer,
-            backgroundImage: avatarUrl != null && File(avatarUrl!).existsSync()
-                ? FileImage(File(avatarUrl!))
+            backgroundImage: avatarUrl != null
+                ? NetworkImage(avatarUrl!)
                 : null,
-            child: avatarUrl == null || !File(avatarUrl!).existsSync()
+            child: avatarUrl == null
                 ? Text(
                     initials.isEmpty ? '?' : initials,
                     style: TextStyle(
