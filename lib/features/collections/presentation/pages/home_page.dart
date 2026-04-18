@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/collections_provider.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../collections/domain/entities/collection.dart';
 import '../../../sharing/presentation/providers/sharing_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -11,107 +13,29 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
-  void _showProfileSheet(BuildContext context, WidgetRef ref,
-      String displayName, String email) {
-    final initials = displayName.trim().split(' ').where((w) => w.isNotEmpty)
-        .map((w) => w[0].toUpperCase()).take(2).join();
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            CircleAvatar(
-              radius: 36,
-              backgroundColor:
-                  Theme.of(ctx).colorScheme.primaryContainer,
-              child: Text(
-                initials.isEmpty ? '?' : initials,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(ctx).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(displayName,
-                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(email,
-                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 28),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                backgroundColor:
-                    Theme.of(ctx).colorScheme.errorContainer,
-                foregroundColor:
-                    Theme.of(ctx).colorScheme.onErrorContainer,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await ref
-                    .read(authRepositoryProvider)
-                    .signOut();
-              },
-              child: const Text('Sair da conta'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final localAsync = ref.watch(collectionsStreamProvider);
     final sharedAsync = ref.watch(sharedCollectionsStreamProvider);
     final currentUser = ref.watch(currentUserProvider);
     final isLoggedIn = currentUser != null;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(isLoggedIn
-              ? Icons.account_circle
-              : Icons.account_circle_outlined),
-          onPressed: () {
-            if (isLoggedIn) {
-              _showProfileSheet(context, ref, currentUser.displayName,
-                  currentUser.email);
-            } else {
-              context.push(AppRoutes.login);
-            }
-          },
-        ),
-        title: const Text('Minhas Listas'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => context.push(AppRoutes.search),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push(AppRoutes.settings),
-          ),
-        ],
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      backgroundColor: colorScheme.surface,
+      appBar: _GlassAppBar(
+        isLoggedIn: isLoggedIn,
+        onProfileTap: () {
+          if (isLoggedIn) {
+            context.push(AppRoutes.profile);
+          } else {
+            context.push(AppRoutes.login);
+          }
+        },
+        onSearch: () => context.push(AppRoutes.search),
+        onSettings: () => context.push(AppRoutes.settings),
       ),
       body: localAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -126,60 +50,34 @@ class HomePage extends ConsumerWidget {
 
           return CustomScrollView(
             slivers: [
+              const SliverToBoxAdapter(child: SizedBox(height: 88)),
               if (local.isNotEmpty) ...[
-                const _SectionHeader(title: 'Minhas listas'),
+                const _SectionHeader(
+                    title: 'Minhas listas', subtitle: 'Coleções pessoais'),
                 _CollectionGrid(collections: local, isShared: false),
               ],
               if (shared.isNotEmpty) ...[
-                const _SectionHeader(title: 'Listas compartilhadas'),
+                const _SectionHeader(
+                    title: 'Compartilhadas',
+                    subtitle: 'Listas em que você participa'),
                 _CollectionGrid(collections: shared, isShared: true),
               ],
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              const SliverToBoxAdapter(child: SizedBox(height: 140)),
             ],
           );
         },
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 1:
-              context.push(AppRoutes.search);
-            case 2:
-              context.push(AppRoutes.settings);
-            case 3:
-              final user = currentUser;
-              if (user != null) {
-                _showProfileSheet(
-                    context, ref, user.displayName, user.email);
-              } else {
-                context.push(AppRoutes.login);
-              }
+      bottomNavigationBar: _GlassNavBar(
+        isLoggedIn: isLoggedIn,
+        onSearch: () => context.push(AppRoutes.search),
+        onSettings: () => context.push(AppRoutes.settings),
+        onProfile: () {
+          if (isLoggedIn) {
+            context.push(AppRoutes.profile);
+          } else {
+            context.push(AppRoutes.login);
           }
         },
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.collections_bookmark_outlined),
-            selectedIcon: Icon(Icons.collections_bookmark),
-            label: 'Início',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Buscar',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Config.',
-          ),
-          NavigationDestination(
-            icon: Icon(isLoggedIn
-                ? Icons.account_circle
-                : Icons.account_circle_outlined),
-            label: isLoggedIn ? 'Perfil' : 'Entrar',
-          ),
-        ],
       ),
       floatingActionButton: _HomeFab(
         onCreateLocal: () => context.push(AppRoutes.createCollection),
@@ -196,7 +94,130 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-// ─── FAB expandível ──────────────────────────────────────────────────────────
+// ─── AppBar Glassmorphism ─────────────────────────────────────────────────────
+
+class _GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final bool isLoggedIn;
+  final VoidCallback onProfileTap;
+  final VoidCallback onSearch;
+  final VoidCallback onSettings;
+
+  const _GlassAppBar({
+    required this.isLoggedIn,
+    required this.onProfileTap,
+    required this.onSearch,
+    required this.onSettings,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppDesignTokens>()!;
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+            sigmaX: tokens.glassBlur, sigmaY: tokens.glassBlur),
+        child: AppBar(
+          backgroundColor: colorScheme.surface
+              .withValues(alpha: tokens.glassOpacity),
+          leading: IconButton(
+            icon: Icon(isLoggedIn
+                ? Icons.account_circle
+                : Icons.account_circle_outlined),
+            onPressed: onProfileTap,
+          ),
+          title: Text(
+            'Listel',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search_rounded),
+              onPressed: onSearch,
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: onSettings,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── NavigationBar Glassmorphism ──────────────────────────────────────────────
+
+class _GlassNavBar extends StatelessWidget {
+  final bool isLoggedIn;
+  final VoidCallback onSearch;
+  final VoidCallback onSettings;
+  final VoidCallback onProfile;
+
+  const _GlassNavBar({
+    required this.isLoggedIn,
+    required this.onSearch,
+    required this.onSettings,
+    required this.onProfile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppDesignTokens>()!;
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+            sigmaX: tokens.glassBlur, sigmaY: tokens.glassBlur),
+        child: NavigationBar(
+          selectedIndex: 0,
+          onDestinationSelected: (index) {
+            switch (index) {
+              case 1:
+                onSearch();
+              case 2:
+                onSettings();
+              case 3:
+                onProfile();
+            }
+          },
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.collections_bookmark_outlined),
+              selectedIcon: Icon(Icons.collections_bookmark),
+              label: 'Início',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.search_outlined),
+              selectedIcon: Icon(Icons.search),
+              label: 'Buscar',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Config.',
+            ),
+            NavigationDestination(
+              icon: Icon(isLoggedIn
+                  ? Icons.account_circle
+                  : Icons.account_circle_outlined),
+              label: isLoggedIn ? 'Perfil' : 'Entrar',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── FAB expandível com gradiente primary ─────────────────────────────────────
 
 class _HomeFab extends StatefulWidget {
   final VoidCallback onCreateLocal;
@@ -360,35 +381,54 @@ class _MiniAction extends StatelessWidget {
   }
 }
 
-// ─── Seção e Grid ─────────────────────────────────────────────────────────────
+// ─── Section header editorial ────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final String? subtitle;
+  const _SectionHeader({required this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+        padding: const EdgeInsets.fromLTRB(20, 32, 20, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: colorScheme.onSurface,
+                  ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
               ),
+            ],
+          ],
         ),
       ),
     );
   }
 }
 
+// ─── Grid e Cards (tonal layering) ────────────────────────────────────────────
+
 class _CollectionGrid extends StatelessWidget {
   final List<Collection> collections;
   final bool isShared;
 
-  const _CollectionGrid({required this.collections, required this.isShared});
+  const _CollectionGrid(
+      {required this.collections, required this.isShared});
 
   @override
   Widget build(BuildContext context) {
@@ -397,9 +437,9 @@ class _CollectionGrid extends StatelessWidget {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.1,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 0.82,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -463,109 +503,98 @@ class _CollectionCard extends ConsumerWidget {
     if (isShared) {
       final remoteId = collection.remoteId;
       if (remoteId == null) return;
-      await ref.read(sharingNotifierProvider.notifier).leaveCollection(remoteId);
+      await ref
+          .read(sharingNotifierProvider.notifier)
+          .leaveCollection(remoteId);
     } else {
-      await ref.read(collectionsNotifierProvider.notifier).delete(collection.id);
+      await ref
+          .read(collectionsNotifierProvider.notifier)
+          .delete(collection.id);
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppDesignTokens>()!;
     final color = Color(collection.colorValue);
-    final lum = color.computeLuminance();
-    final isVeryDark = lum < 0.05;
-    final textColor = collection.coverImagePath != null
-        ? Colors.white
-        : (lum > 0.5 ? Colors.black87 : Colors.white);
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () => context.push('/collection/$navId'),
-        onLongPress: () => _confirmDelete(context, ref),
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: isVeryDark ? color : null,
-            gradient: isVeryDark
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [color, Color.lerp(color, Colors.black, 0.2)!],
-                  ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (collection.coverImagePath != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    File(collection.coverImagePath!),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
+        boxShadow: tokens.tintedShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
+        child: InkWell(
+          onTap: () => context.push('/collection/$navId'),
+          onLongPress: () => _confirmDelete(context, ref),
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _CardThumbnail(
+                    collection: collection,
+                    color: color,
+                    radius: tokens.radiusMd,
                   ),
                 ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.45, 1.0],
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.70),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        if (collection.coverImagePath == null)
-                          Text(
-                            collection.emoji ??
-                                (collection.name.isNotEmpty
-                                    ? collection.name[0].toUpperCase()
-                                    : '?'),
-                            style: TextStyle(
-                              fontSize: 28,
-                              color:
-                                  collection.emoji == null ? textColor : null,
-                              fontWeight: FontWeight.bold,
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        collection.name,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        const Spacer(),
-                        if (isShared)
-                          Icon(Icons.wifi_tethering,
-                              size: 16,
-                              color: textColor.withValues(alpha: 0.7)),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      collection.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (isShared) ...[
+                            Icon(Icons.wifi_tethering,
+                                size: 12,
+                                color: colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Compartilhada',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ] else
+                            Text(
+                              'Pessoal',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -573,7 +602,70 @@ class _CollectionCard extends ConsumerWidget {
   }
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
+class _CardThumbnail extends StatelessWidget {
+  final Collection collection;
+  final Color color;
+  final double radius;
+
+  const _CardThumbnail({
+    required this.collection,
+    required this.color,
+    required this.radius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lum = color.computeLuminance();
+    final textColor = lum > 0.5 ? Colors.black87 : Colors.white;
+    final hasImage = collection.coverImagePath != null;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (hasImage)
+            Image.file(
+              File(collection.coverImagePath!),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _colorBlock(),
+            )
+          else
+            _colorBlock(),
+          if (!hasImage)
+            Center(
+              child: Text(
+                collection.emoji ??
+                    (collection.name.isNotEmpty
+                        ? collection.name[0].toUpperCase()
+                        : '?'),
+                style: TextStyle(
+                  fontSize: 44,
+                  color: collection.emoji == null ? textColor : null,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _colorBlock() => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: 0.85),
+              Color.lerp(color, Colors.black, 0.15)!,
+            ],
+          ),
+        ),
+      );
+}
+
+// ─── Empty state editorial ────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final bool isLoggedIn;
@@ -581,25 +673,46 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppDesignTokens>()!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.collections_bookmark_outlined,
-                size: 72,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text('Nenhuma lista ainda',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(tokens.radiusXl),
+              ),
+              child: Icon(
+                Icons.collections_bookmark_outlined,
+                size: 56,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 32),
             Text(
-              'Crie sua primeira lista para organizar seus desejos',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              'Sua galeria\nestá esperando',
               textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.8,
+                    color: colorScheme.onSurface,
+                    height: 1.1,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Crie sua primeira lista para começar seus desejos.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
             ),
           ],
         ),
