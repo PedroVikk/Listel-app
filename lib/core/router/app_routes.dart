@@ -17,6 +17,7 @@ abstract class AppRoutes {
   static const resetPassword = '/auth/reset-password';
 
   static const search = '/search';
+  static const friends = '/friends';
 
   // Listas compartilhadas
   static const createSharedCollection = '/shared/create';

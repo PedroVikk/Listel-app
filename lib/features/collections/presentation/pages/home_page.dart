@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/collections_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/providers/sync_provider.dart';
 import '../../../collections/domain/entities/collection.dart';
 import '../../../sharing/presentation/providers/sharing_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -18,6 +19,7 @@ class HomePage extends ConsumerWidget {
     final localAsync = ref.watch(collectionsStreamProvider);
     final sharedAsync = ref.watch(sharedCollectionsStreamProvider);
     final currentUser = ref.watch(currentUserProvider);
+    final syncStatsAsync = ref.watch(syncQueueStatsProvider);
     final isLoggedIn = currentUser != null;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -27,6 +29,10 @@ class HomePage extends ConsumerWidget {
       backgroundColor: colorScheme.surface,
       appBar: _GlassAppBar(
         isLoggedIn: isLoggedIn,
+        syncPending: syncStatsAsync.maybeWhen(
+          data: (stats) => stats.pending > 0,
+          orElse: () => false,
+        ),
         onProfileTap: () {
           if (isLoggedIn) {
             context.push(AppRoutes.profile);
@@ -34,7 +40,9 @@ class HomePage extends ConsumerWidget {
             context.push(AppRoutes.login);
           }
         },
-        onSearch: () => context.push(AppRoutes.search),
+        onFriends: () => isLoggedIn
+            ? context.push(AppRoutes.friends)
+            : context.push('${AppRoutes.login}?redirectTo=${AppRoutes.friends}'),
         onSettings: () => context.push(AppRoutes.settings),
       ),
       body: localAsync.when(
@@ -98,14 +106,16 @@ class HomePage extends ConsumerWidget {
 
 class _GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isLoggedIn;
+  final bool syncPending;
   final VoidCallback onProfileTap;
-  final VoidCallback onSearch;
+  final VoidCallback onFriends;
   final VoidCallback onSettings;
 
   const _GlassAppBar({
     required this.isLoggedIn,
+    this.syncPending = false,
     required this.onProfileTap,
-    required this.onSearch,
+    required this.onFriends,
     required this.onSettings,
   });
 
@@ -138,9 +148,28 @@ class _GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
           ),
           actions: [
+            if (syncPending)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Center(
+                  child: Tooltip(
+                    message: 'Sincronizando dados...',
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             IconButton(
-              icon: const Icon(Icons.search_rounded),
-              onPressed: onSearch,
+              icon: const Icon(Icons.people_outline),
+              onPressed: onFriends,
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),

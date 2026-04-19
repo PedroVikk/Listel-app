@@ -167,6 +167,42 @@ class CollectionDetailPage extends ConsumerWidget {
     Share.share(buffer.toString().trim());
   }
 
+  Future<void> _toggleVisibility(
+    BuildContext context,
+    WidgetRef ref,
+    Collection collection,
+  ) async {
+    try {
+      final remoteRepo = ref.read(remoteCollectionsRepositoryProvider);
+      final newIsPublic = !collection.isPublic;
+
+      await remoteRepo.save(collection.copyWith(isPublic: newIsPublic));
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newIsPublic
+                  ? 'Coleção agora é pública'
+                  : 'Coleção agora é privada',
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildImage(SavedItem item, ColorScheme cs,
       {BoxFit fit = BoxFit.cover}) {
     Widget fallback() => Container(
@@ -586,7 +622,18 @@ class CollectionDetailPage extends ConsumerWidget {
                 itemsAsync.valueOrNull ?? [],
               ),
             ),
-          // Botão de modo de visualização (câmera) — cicla entre Galeria, Shopping, Vitrine
+          // Visibility toggle — mostra ícone se remoteId existir (coleção sincronizada)
+          if (collection != null && collection.remoteId != null)
+            IconButton(
+              icon: Icon(collection.isPublic
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined),
+              tooltip: collection.isPublic
+                  ? 'Coleção pública'
+                  : 'Coleção privada',
+              onPressed: () => _toggleVisibility(context, ref, collection),
+            ),
+          // Modo de visualização (câmera) — cicla entre Galeria, Shopping, Vitrine
           IconButton(
             icon: const Icon(Icons.camera_alt_outlined),
             tooltip: 'Modo: ${viewMode.label}',

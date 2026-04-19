@@ -6,38 +6,56 @@ import '../../domain/entities/collection.dart';
 import '../../domain/repositories/collections_repository.dart';
 import '../../data/repositories/collections_repository_impl.dart';
 import '../../data/repositories/remote_collections_repository_impl.dart';
+import '../../data/datasources/remote_collections_datasource.dart' as rds;
 
+/// Provider do repositório local (Isar).
 final collectionsRepositoryProvider = Provider<CollectionsRepository>(
   (ref) => CollectionsRepositoryImpl(),
 );
 
+/// Provider do repositório remoto (Supabase).
 final remoteCollectionsRepositoryProvider = Provider<CollectionsRepository>(
   (ref) => RemoteCollectionsRepositoryImpl(Supabase.instance.client),
 );
 
-/// Stream das coleções locais (Isar).
+/// Provider da data source remota (Supabase) para acesso direto.
+final remoteCollectionsDataSourceProvider =
+    Provider<rds.RemoteCollectionsDataSource>((ref) {
+  return rds.RemoteCollectionsDataSource(Supabase.instance.client);
+});
+
+/// Stream das coleções locais (Isar) — apenas locais, não compartilhadas.
 final collectionsStreamProvider = StreamProvider<List<Collection>>((ref) {
   return ref.watch(collectionsRepositoryProvider).watchAll();
 });
 
-/// Stream das coleções compartilhadas (Supabase Realtime).
-/// Emite lista vazia se não autenticado.
-/// Faz overlay do coverImagePath salvo localmente no Isar (por id/remoteId).
+/// Stream das coleções do usuário no Supabase (próprias).
+/// Compatível com nome anterior `sharedCollectionsStreamProvider`.
 final sharedCollectionsStreamProvider = StreamProvider<List<Collection>>((ref) {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return const Stream.empty();
 
-  final localRepo = ref.watch(collectionsRepositoryProvider);
-
   return ref.watch(remoteCollectionsRepositoryProvider).watchAll().asyncMap(
-    (remoteCollections) => Future.wait(
-      remoteCollections.map((c) async {
-        final local = await localRepo.getById(c.id);
-        if (local?.coverImagePath == null) return c;
-        return c.copyWith(coverImagePath: local!.coverImagePath);
-      }),
-    ),
+    (remoteCollections) async {
+      // Overlay com coverImagePath local se existir
+      final localRepo = ref.watch(collectionsRepositoryProvider);
+      return Future.wait(
+        remoteCollections.map((c) async {
+          final local = await localRepo.getById(c.id);
+          if (local?.coverImagePath == null) return c;
+          return c.copyWith(coverImagePath: local!.coverImagePath);
+        }),
+      );
+    },
   );
+});
+
+/// Stream das coleções públicas de um usuário específico (para perfil).
+/// Recarrega quando userId muda.
+final userPublicCollectionsStreamProvider =
+    StreamProvider.family<List<Collection>, String>((ref, userId) {
+  final dataSource = ref.watch(remoteCollectionsDataSourceProvider);
+  return dataSource.watchPublicCollections(userId);
 });
 
 class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
@@ -46,6 +64,7 @@ class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
     return ref.watch(collectionsRepositoryProvider).getAll();
   }
 
+  /// Cria nova coleção local (não sincronizada).
   Future<void> create({
     required String name,
     String? emoji,
@@ -66,12 +85,14 @@ class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
     ref.invalidateSelf();
   }
 
+  /// Atualiza coleção existente e enfileira sincronização se remoteId existir.
   Future<void> updateCollection(Collection collection) async {
     final updated = collection.copyWith(updatedAt: DateTime.now());
     await ref.read(collectionsRepositoryProvider).save(updated);
     ref.invalidateSelf();
   }
 
+  /// Deleta coleção localmente e enfileira exclusão remota se aplicável.
   Future<void> delete(String id) async {
     final existing = await ref.read(collectionsRepositoryProvider).getById(id);
     if (existing?.coverImagePath != null) {
@@ -83,6 +104,7 @@ class CollectionsNotifier extends AsyncNotifier<List<Collection>> {
   }
 }
 
+/// Notifier para gerenciar coleções locais.
 final collectionsNotifierProvider =
     AsyncNotifierProvider<CollectionsNotifier, List<Collection>>(
   CollectionsNotifier.new,

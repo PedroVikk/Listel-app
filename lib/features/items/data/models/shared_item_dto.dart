@@ -22,6 +22,7 @@ class SharedItemDto {
             ? ItemStatus.purchased
             : ItemStatus.pending,
         source: json['source'] == 'shared' ? ItemSource.shared : ItemSource.manual,
+        sortOrder: json['sort_order'] as int? ?? 0,
         createdAt: DateTime.parse(json['created_at'] as String),
         updatedAt: DateTime.parse(json['updated_at'] as String),
         addedBy: addedByName,
@@ -43,6 +44,7 @@ class SharedItemDto {
         'notes': item.notes,
         'status': item.status.name,
         'source': item.source.name,
+        'sort_order': item.sortOrder,
         'added_by': addedByUserId,
         'created_at': item.createdAt.toIso8601String(),
         'updated_at': item.updatedAt.toIso8601String(),

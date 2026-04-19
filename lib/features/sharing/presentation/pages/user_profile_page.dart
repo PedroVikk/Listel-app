@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../collections/presentation/providers/collections_provider.dart';
+import '../../../collections/domain/entities/collection.dart';
+import '../../../../core/router/app_routes.dart';
 
 class UserProfilePage extends ConsumerWidget {
   const UserProfilePage({super.key});
@@ -78,6 +81,11 @@ class UserProfilePage extends ConsumerWidget {
             return const Center(child: Text('Não autenticado'));
           }
 
+          // Load public collections for this user
+          final userId = profile.user.id;
+          final publicCollectionsAsync =
+              ref.watch(userPublicCollectionsStreamProvider(userId));
+
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
@@ -86,8 +94,7 @@ class UserProfilePage extends ConsumerWidget {
               _AvatarSection(
                 avatarUrl: profile.user.avatarUrl,
                 displayName: profile.user.displayName,
-                onEditPressed: () =>
-                    _editAvatarDialog(context, ref),
+                onEditPressed: () => _editAvatarDialog(context, ref),
               ),
               const SizedBox(height: 24),
               // User info section
@@ -103,10 +110,62 @@ class UserProfilePage extends ConsumerWidget {
                 friendsCount: profile.friendsCount,
               ),
               const SizedBox(height: 32),
-              // Action cards grid
+              // Public collections section
+              publicCollectionsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Erro ao carregar: $e'),
+                ),
+                data: (publicCollections) {
+                  if (publicCollections.isNotEmpty) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Listas Públicas',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 12),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 1,
+                          ),
+                          itemCount: publicCollections.length,
+                          itemBuilder: (context, index) {
+                            final collection = publicCollections[index];
+                            return _PublicCollectionCard(
+                              collection: collection,
+                              onTap: () {
+                                context.push(
+                                  '${AppRoutes.collectionDetail}/${collection.id}',
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 32),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              // Action cards grid (Friends, Notifications, Settings)
               _ActionCardsGrid(
                 notificationsCount: 0,
-                onMyListsTap: () => context.go('/collections'),
                 onFriendsTap: () => context.go('/friends'),
                 onNotificationsTap: () => context.go('/notifications'),
                 onSettingsTap: () => context.go('/settings'),
@@ -134,9 +193,7 @@ class UserProfilePage extends ConsumerWidget {
 
                   if (confirmed == true) {
                     try {
-                      await ref
-                          .read(authRepositoryProvider)
-                          .signOut();
+                      await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
                         context.go('/login');
                       }
@@ -325,14 +382,14 @@ class _StatCard extends StatelessWidget {
 
 class _ActionCardsGrid extends StatelessWidget {
   final int notificationsCount;
-  final VoidCallback onMyListsTap;
+  final VoidCallback? onMyListsTap;
   final VoidCallback onFriendsTap;
   final VoidCallback onNotificationsTap;
   final VoidCallback onSettingsTap;
 
   const _ActionCardsGrid({
     required this.notificationsCount,
-    required this.onMyListsTap,
+    this.onMyListsTap,
     required this.onFriendsTap,
     required this.onNotificationsTap,
     required this.onSettingsTap,
@@ -340,39 +397,42 @@ class _ActionCardsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final children = <Widget>[
+      if (onMyListsTap != null)
+        _ActionCard(
+          icon: Icons.menu_rounded,
+          label: 'Minhas Listas',
+          subtitle: 'Gerencie suas curadorias',
+          backgroundColor: Colors.pink.shade100,
+          onTap: onMyListsTap!,
+        ),
+      _ActionCard(
+        icon: Icons.people_alt,
+        label: 'Amigos',
+        backgroundColor: Colors.indigo.shade100,
+        onTap: onFriendsTap,
+      ),
+      _ActionCard(
+        icon: Icons.notifications,
+        label: 'Notificações',
+        badge: notificationsCount > 0 ? notificationsCount : null,
+        onTap: onNotificationsTap,
+      ),
+      _ActionCard(
+        icon: Icons.settings,
+        label: 'Configurações',
+        trailing: Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: onSettingsTap,
+      ),
+    ];
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      children: [
-        _ActionCard(
-          icon: Icons.menu_rounded,
-          label: 'Minhas Listas',
-          subtitle: 'Gerencie suas curadorias',
-          backgroundColor: Colors.pink.shade100,
-          onTap: onMyListsTap,
-        ),
-        _ActionCard(
-          icon: Icons.people_alt,
-          label: 'Amigos',
-          backgroundColor: Colors.indigo.shade100,
-          onTap: onFriendsTap,
-        ),
-        _ActionCard(
-          icon: Icons.notifications,
-          label: 'Notificações',
-          badge: notificationsCount > 0 ? notificationsCount : null,
-          onTap: onNotificationsTap,
-        ),
-        _ActionCard(
-          icon: Icons.settings,
-          label: 'Configurações',
-          trailing: Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: onSettingsTap,
-        ),
-      ],
+      children: children,
     );
   }
 }
@@ -462,6 +522,56 @@ class _ActionCard extends StatelessWidget {
                 child: trailing!,
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PublicCollectionCard extends StatelessWidget {
+  final Collection collection;
+  final VoidCallback onTap;
+
+  const _PublicCollectionCard({
+    required this.collection,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final backgroundColor = Color(collection.colorValue);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        color: backgroundColor.withValues(alpha: 0.15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (collection.emoji != null)
+                  Text(
+                    collection.emoji!,
+                    style: const TextStyle(fontSize: 32),
+                  ),
+                const SizedBox(height: 8),
+                Text(
+                  collection.name,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

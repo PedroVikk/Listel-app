@@ -19,6 +19,7 @@ import '../../features/sharing/presentation/pages/join_collection_page.dart';
 import '../../features/sharing/presentation/pages/members_page.dart';
 import '../../features/sharing/presentation/pages/user_profile_page.dart';
 import '../../features/items/presentation/pages/search_page.dart';
+import '../../features/friends/presentation/pages/friends_page.dart';
 import 'app_routes.dart';
 
 GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
@@ -156,6 +157,10 @@ GoRouter createAppRouter({String initialLocation = AppRoutes.home}) {
           final id = state.pathParameters['id']!;
           return MembersPage(collectionRemoteId: id);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.friends,
+        builder: (context, state) => const FriendsPage(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

@@ -7,63 +7,32 @@ import '../../../collections/presentation/providers/collections_provider.dart';
 import '../../../collections/domain/entities/collection.dart';
 import '../../../items/presentation/providers/items_provider.dart';
 import '../../../../core/services/metadata_extractor_service.dart';
+import '../../../../core/theme/app_theme.dart';
 
-/// Tela intermediária que exibe o bottom sheet de salvamento rápido.
-/// Ao fechar, retorna para a home.
 class ShareReceivedPage extends ConsumerWidget {
   final Map<String, dynamic>? sharedData;
   const ShareReceivedPage({super.key, this.sharedData});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Exibe o bottom sheet logo que a tela monta
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        _showSaveSheet(context, ref, sharedData);
-      }
-    });
-
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  static Future<void> _showSaveSheet(
-    BuildContext context,
-    WidgetRef ref,
-    Map<String, dynamic>? data,
-  ) async {
-    await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _SaveItemSheet(sharedData: data),
-    );
-
-    if (context.mounted) {
-      context.go('/');
-    }
+    return _SaveItemPage(sharedData: sharedData);
   }
 }
 
-class _SaveItemSheet extends ConsumerStatefulWidget {
+class _SaveItemPage extends ConsumerStatefulWidget {
   final Map<String, dynamic>? sharedData;
-  const _SaveItemSheet({this.sharedData});
+  const _SaveItemPage({this.sharedData});
 
   @override
-  ConsumerState<_SaveItemSheet> createState() => _SaveItemSheetState();
+  ConsumerState<_SaveItemPage> createState() => _SaveItemPageState();
 }
 
-class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
+class _SaveItemPageState extends ConsumerState<_SaveItemPage> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
+  final _notesController = TextEditingController();
   Collection? _selectedCollection;
   bool _saving = false;
-
-  // Metadata extraction state
   bool _loadingMeta = false;
   String? _extractedImageUrl;
 
@@ -75,11 +44,7 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
     if (raw.isNotEmpty && raw != url) {
       _nameController.text = raw.length > 80 ? raw.substring(0, 80) : raw;
     }
-
-    // Extrai metadados Open Graph se houver URL
-    if (url.isNotEmpty) {
-      _fetchMetadata(url);
-    }
+    if (url.isNotEmpty) _fetchMetadata(url);
   }
 
   Future<void> _fetchMetadata(String url) async {
@@ -91,11 +56,10 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
         if (meta.title != null && meta.title!.isNotEmpty) {
           _nameController.text = meta.title!;
         }
-        if (meta.imageUrl != null) {
-          _extractedImageUrl = meta.imageUrl;
-        }
+        if (meta.imageUrl != null) _extractedImageUrl = meta.imageUrl;
         if (meta.price != null && _priceController.text.isEmpty) {
-          _priceController.text = meta.price!.toStringAsFixed(2);
+          final cents = (meta.price! * 100).round();
+          _priceController.text = _formatBrl(cents);
         }
       });
     } finally {
@@ -103,30 +67,43 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
     }
   }
 
+  static String _formatBrl(int cents) {
+    final reais = cents ~/ 100;
+    final frac = (cents % 100).toString().padLeft(2, '0');
+    final reaisStr = reais.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+    return '$reaisStr,$frac';
+  }
+
+  double? _parsePrice() {
+    final raw =
+        _priceController.text.replaceAll('.', '').replaceAll(',', '.');
+    if (raw.trim().isEmpty) return null;
+    return double.tryParse(raw);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
+  bool get _canSave {
+    if (_nameController.text.trim().isEmpty) return false;
+    if (_selectedCollection == null) return false;
+    if (_priceController.text.trim().isNotEmpty && _parsePrice() == null) {
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _save() async {
-    if (_selectedCollection == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escolha uma pasta primeiro')),
-      );
-      return;
-    }
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe um nome para o produto')),
-      );
-      return;
-    }
+    if (!_canSave || _saving) return;
     setState(() => _saving = true);
     try {
-      final price = double.tryParse(
-          _priceController.text.replaceAll(',', '.'));
+      final price = _parsePrice();
       await ref
           .read(itemsNotifierProvider(_selectedCollection!.id).notifier)
           .createFromShare(
@@ -136,8 +113,17 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
             imageUrl: _extractedImageUrl,
             price: price,
             store: widget.sharedData?['store'] as String?,
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
           );
-      if (mounted) Navigator.pop(context, true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Salvo em ${_selectedCollection!.name}'),
+        ),
+      );
+      context.go('/');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -145,10 +131,11 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final tokens = theme.extension<AppDesignTokens>()!;
     final localAsync = ref.watch(collectionsStreamProvider);
     final sharedAsync = ref.watch(sharedCollectionsStreamProvider);
-
-    // Mescla locais + compartilhadas numa única AsyncValue
     final collectionsAsync = localAsync.whenData(
       (local) => [
         ...local,
@@ -156,194 +143,393 @@ class _SaveItemSheetState extends ConsumerState<_SaveItemSheet> {
       ],
     );
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.go('/'),
+        ),
+        title: const Text('Salvar produto'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.check, color: colorScheme.primary),
+            onPressed: _canSave && !_saving ? _save : null,
+          ),
+        ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                children: [
+                  _PreviewImage(
+                    loading: _loadingMeta,
+                    imageUrl: _extractedImageUrl,
+                    store: widget.sharedData?['store'] as String?,
+                    tokens: tokens,
+                    colorScheme: colorScheme,
+                  ),
+                  const SizedBox(height: 24),
+                  _label(context, 'Nome do produto'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      hintText: 'Ex: Tênis Nike Air Max',
+                      counterText: '',
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLength: 150,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 20),
+                  _label(context, 'Preço (R\$)'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    maxLength: 12,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      _BrlCurrencyInputFormatter(),
+                    ],
+                    decoration: const InputDecoration(
+                      hintText: '0,00',
+                      prefixText: 'R\$ ',
+                      counterText: '',
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 20),
+                  _label(context, 'Observações (opcional)'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _notesController,
+                    decoration: const InputDecoration(
+                      hintText: 'Tamanho, cor, observação rápida…',
+                      counterText: '',
+                    ),
+                    maxLength: 200,
+                    maxLines: 2,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                  ),
+                  const SizedBox(height: 20),
+                  _label(context, 'Salvar em qual pasta?'),
+                  const SizedBox(height: 12),
+                  collectionsAsync.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text('Erro ao carregar pastas: $e'),
+                    data: (collections) {
+                      if (collections.isEmpty) {
+                        return Text(
+                          'Nenhuma pasta criada. Crie uma pasta primeiro.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        );
+                      }
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final col in collections)
+                            _CollectionChip(
+                              collection: col,
+                              selected: _selectedCollection?.id == col.id,
+                              onTap: () =>
+                                  setState(() => _selectedCollection = col),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            _BottomSaveBar(
+              enabled: _canSave && !_saving,
+              saving: _saving,
+              tokens: tokens,
+              colorScheme: colorScheme,
+              onPressed: _save,
+              targetCollection: _selectedCollection,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _label(BuildContext context, String text) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+    );
+  }
+}
+
+class _PreviewImage extends StatelessWidget {
+  final bool loading;
+  final String? imageUrl;
+  final String? store;
+  final AppDesignTokens tokens;
+  final ColorScheme colorScheme;
+
+  const _PreviewImage({
+    required this.loading,
+    required this.imageUrl,
+    required this.store,
+    required this.tokens,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(tokens.radiusLg),
+      child: Stack(
         children: [
-          // Handle
-          Center(
+          AspectRatio(
+            aspectRatio: 1.05,
             child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              color: colorScheme.surfaceContainerHighest,
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, _, _) => Icon(
+                            Icons.image_not_supported_outlined,
+                            color: colorScheme.onSurfaceVariant,
+                            size: 48,
+                          ),
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            color: colorScheme.onSurfaceVariant,
+                            size: 48,
+                          ),
+                        ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text('Salvar produto',
-                style: Theme.of(context).textTheme.titleLarge),
-          ),
-
-          // Imagem extraída via Open Graph
-          if (_loadingMeta)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: LinearProgressIndicator(),
-            )
-          else if (_extractedImageUrl != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: _extractedImageUrl!,
-                  height: 160,
-                  fit: BoxFit.cover,
-                  placeholder: (_, _) => const SizedBox(
-                      height: 160,
-                      child: Center(child: CircularProgressIndicator())),
-                  errorWidget: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
-            ),
-
-          // URL preview
-          if (widget.sharedData?['url'] != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          if (store != null && store!.isNotEmpty)
+            Positioned(
+              top: 12,
+              right: 12,
               child: Container(
-                padding: const EdgeInsets.all(10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  color: colorScheme.surface.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (widget.sharedData?['store'] != null) ...[
-                      Chip(
-                        label: Text(widget.sharedData!['store'] as String,
-                            style: const TextStyle(fontSize: 12)),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: Text(
-                        widget.sharedData!['url'] as String,
-                        style: Theme.of(context).textTheme.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Icon(Icons.storefront_outlined,
+                        size: 14, color: colorScheme.onSurface),
+                    const SizedBox(width: 6),
+                    Text(
+                      store!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                 ),
               ),
             ),
-
-          // Nome do produto
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nome do produto *',
-                hintText: 'Ex: Tênis Nike Air Max',
-              ),
-              textCapitalization: TextCapitalization.sentences,
-              autofocus: true,
-              maxLength: 150,
-              maxLengthEnforcement: MaxLengthEnforcement.enforced,
-            ),
-          ),
-
-          // Preço
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: TextField(
-              controller: _priceController,
-              decoration: const InputDecoration(
-                labelText: 'Preço (R\$)',
-                hintText: '0,00',
-                prefixText: 'R\$ ',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              maxLength: 12,
-              maxLengthEnforcement: MaxLengthEnforcement.enforced,
-            ),
-          ),
-
-          // Escolha de pasta
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text('Salvar em qual pasta?',
-                style: Theme.of(context).textTheme.labelLarge),
-          ),
-          collectionsAsync.when(
-            loading: () =>
-                const Padding(padding: EdgeInsets.all(16), child: LinearProgressIndicator()),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Erro ao carregar pastas: $e'),
-            ),
-            data: (collections) {
-              if (collections.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                  child: Text(
-                    'Nenhuma pasta criada. Crie uma pasta primeiro.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                );
-              }
-              return SizedBox(
-                height: 56,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                  itemCount: collections.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final col = collections[index];
-                    final isSelected = _selectedCollection?.id == col.id;
-                    final color = Color(col.colorValue);
-                    return ChoiceChip(
-                      label: Text('${col.emoji ?? ''} ${col.name}'),
-                      selected: isSelected,
-                      selectedColor: color.withValues(alpha: 0.25),
-                      side: isSelected
-                          ? BorderSide(color: color, width: 2)
-                          : null,
-                      onSelected: (_) =>
-                          setState(() => _selectedCollection = col),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Botão salvar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: FilledButton.icon(
-              onPressed: _saving ? null : _save,
-              icon: _saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.bookmark_add_outlined),
-              label: const Text('Salvar produto'),
-            ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _CollectionChip extends StatelessWidget {
+  final Collection collection;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CollectionChip({
+    required this.collection,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = Color(collection.colorValue);
+    final bg = selected ? color : theme.colorScheme.surfaceContainerHighest;
+    final fg = selected
+        ? ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+            ? Colors.white
+            : Colors.black
+        : theme.colorScheme.onSurface;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: selected ? color : Colors.transparent,
+          width: 2,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[
+                  Icon(Icons.check_rounded, size: 18, color: fg),
+                  const SizedBox(width: 6),
+                ] else if (collection.emoji != null &&
+                    collection.emoji!.isNotEmpty) ...[
+                  Text(collection.emoji!),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  collection.name,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomSaveBar extends StatelessWidget {
+  final bool enabled;
+  final bool saving;
+  final AppDesignTokens tokens;
+  final ColorScheme colorScheme;
+  final VoidCallback onPressed;
+  final Collection? targetCollection;
+
+  const _BottomSaveBar({
+    required this.enabled,
+    required this.saving,
+    required this.tokens,
+    required this.colorScheme,
+    required this.onPressed,
+    required this.targetCollection,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        12 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.5,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: tokens.primaryGradient,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: enabled ? tokens.tintedShadow : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: enabled ? onPressed : null,
+              child: SizedBox(
+                height: 56,
+                child: Center(
+                  child: saving
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          targetCollection != null
+                              ? 'Salvar em ${targetCollection!.emoji ?? ''} ${targetCollection!.name}'
+                                  .trim()
+                              : 'Selecione uma pasta',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrlCurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return const TextEditingValue(text: '');
+    final cents = int.parse(digits);
+    final reais = cents ~/ 100;
+    final frac = (cents % 100).toString().padLeft(2, '0');
+    final reaisStr = reais.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+    final formatted = '$reaisStr,$frac';
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

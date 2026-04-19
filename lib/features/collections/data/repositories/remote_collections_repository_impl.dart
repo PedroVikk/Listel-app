@@ -1,58 +1,64 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/collection.dart';
 import '../../domain/repositories/collections_repository.dart';
-import '../models/shared_collection_dto.dart';
+import '../datasources/remote_collections_datasource.dart';
 
-/// Repositório de coleções compartilhadas via Supabase Realtime.
-/// Implementa a mesma interface do repositório local — providers roteiam
-/// para cá quando collection.isShared == true.
+/// Repositório remoto para coleções compartilhadas via Supabase.
+/// Gerencia coleções públicas/privadas e sincronização.
 class RemoteCollectionsRepositoryImpl implements CollectionsRepository {
-  final SupabaseClient _client;
+  late final RemoteCollectionsDataSource _remoteDataSource;
 
-  RemoteCollectionsRepositoryImpl(this._client);
+  RemoteCollectionsRepositoryImpl(SupabaseClient client) {
+    _remoteDataSource = RemoteCollectionsDataSource(client);
+  }
 
   @override
   Future<List<Collection>> getAll() async {
-    final rows = await _client
-        .from('shared_collections')
-        .select()
-        .order('created_at');
-    return (rows as List).map((r) => SharedCollectionDto.fromJson(r)).toList();
+    return _remoteDataSource.getAllByUser();
   }
 
   @override
   Future<Collection?> getById(String id) async {
-    final row = await _client
-        .from('shared_collections')
-        .select()
-        .eq('id', id)
-        .maybeSingle();
-    return row == null ? null : SharedCollectionDto.fromJson(row);
+    return _remoteDataSource.getById(id);
   }
 
   @override
   Future<void> save(Collection collection) async {
-    if (collection.remoteId == null) return;
-    await _client
-        .from('shared_collections')
-        .update(SharedCollectionDto.toJson(collection))
-        .eq('id', collection.remoteId!);
+    await _remoteDataSource.upsert(collection);
   }
 
   @override
   Future<void> delete(String id) async {
-    await _client.from('shared_collections').delete().eq('id', id);
+    // Espera remoteId, não local id
+    return _remoteDataSource.delete(id);
   }
 
   @override
   Stream<List<Collection>> watchAll() {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return const Stream.empty();
+    return _remoteDataSource.watchUserCollections();
+  }
 
-    // Stream inicial + Postgres Changes para INSERT/UPDATE/DELETE
-    return _client
-        .from('shared_collections')
-        .stream(primaryKey: ['id'])
-        .map((rows) => rows.map(SharedCollectionDto.fromJson).toList());
+  /// Retorna coleções públicas de um usuário específico.
+  /// Usado para carregar perfil do usuário.
+  Stream<List<Collection>> watchPublicCollections(String userId) {
+    return _remoteDataSource.watchPublicCollections(userId);
+  }
+
+  /// Busca coleções públicas de um usuário com paginação.
+  Future<List<Collection>> getPublicCollections({
+    required String userId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    return _remoteDataSource.getPublicCollections(
+      userId: userId,
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  /// Atualiza apenas a visibilidade (is_public) de uma coleção.
+  Future<void> updateVisibility(String remoteId, bool isPublic) async {
+    return _remoteDataSource.updateVisibility(remoteId, isPublic);
   }
 }

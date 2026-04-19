@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/items_provider.dart';
 import '../providers/price_search_provider.dart';
 import '../../../../core/services/price_search/price_source.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/saved_item.dart';
 import '../../../collections/presentation/providers/collections_provider.dart';
 
@@ -37,12 +39,13 @@ class ItemDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itemAsync = ref.watch(_itemByIdProvider(itemId));
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhe do item'),
         actions: [
-          if (itemAsync.valueOrNull != null)
+          if (itemAsync.valueOrNull != null) ...[
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Editar item',
@@ -51,264 +54,195 @@ class ItemDetailPage extends ConsumerWidget {
                     extra: itemAsync.value);
               },
             ),
-          if (itemAsync.valueOrNull != null)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Excluir item'),
-                    content:
-                        const Text('Tem certeza que deseja excluir este item?'),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar')),
-                      FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Excluir')),
-                    ],
+            Padding(
+              padding: const EdgeInsets.only(right: 12, left: 4),
+              child: Material(
+                color: colorScheme.error,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _confirmDelete(context, ref, itemAsync.value!),
+                  child: SizedBox(
+                    width: 38,
+                    height: 38,
+                    child: Icon(Icons.delete_outline,
+                        color: colorScheme.onError, size: 20),
                   ),
-                );
-                if (confirmed == true && context.mounted) {
-                  final item = itemAsync.value!;
-                  await ref
-                      .read(itemsNotifierProvider(item.collectionId).notifier)
-                      .delete(item.id);
-                  if (context.mounted) context.pop();
-                }
-              },
+                ),
+              ),
             ),
+          ],
         ],
       ),
       body: itemAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => _buildSkeleton(context),
         error: (e, _) => Center(child: Text('Erro: $e')),
         data: (item) {
           if (item == null) {
             return const Center(child: Text('Item não encontrado'));
           }
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Imagem
-              if (item.imageUrl != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl: item.imageUrl!,
-                    height: 240,
-                    fit: BoxFit.cover,
-                    placeholder: (_, _) => const SizedBox(
-                        height: 240,
-                        child: Center(child: CircularProgressIndicator())),
-                    errorWidget: (_, _, _) =>
-                        const SizedBox(height: 240, child: Placeholder()),
-                  ),
-                ),
-              const SizedBox(height: 16),
-
-              // Status badge
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: item.isPurchased
-                          ? Colors.green.withValues(alpha: 0.15)
-                          : Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          item.isPurchased
-                              ? Icons.check_circle
-                              : Icons.radio_button_unchecked,
-                          size: 14,
-                          color: item.isPurchased
-                              ? Colors.green
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          item.isPurchased ? 'Comprado' : 'Pendente',
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: item.isPurchased
-                                        ? Colors.green
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (item.store != null) ...[
-                    const SizedBox(width: 8),
-                    Chip(
-                      avatar: const Icon(Icons.store_outlined, size: 14),
-                      label: Text(item.store!),
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Nome
-              Text(item.name,
-                  style: Theme.of(context).textTheme.titleLarge),
-
-              // Preço
-              if (item.price != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'R\$ ${item.price!.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-
-              // Observações
-              if (item.notes != null && item.notes!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text('Observações',
-                    style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 4),
-                Text(item.notes!),
-              ],
-
-              const SizedBox(height: 24),
-
-              // Botões de ação
-              if (item.url != null)
-                OutlinedButton.icon(
-                  onPressed: () => _launchUrl(context, item.url!),
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Ver produto'),
-                ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () => ref
-                    .read(itemsNotifierProvider(item.collectionId).notifier)
-                    .toggleStatus(item),
-                icon: Icon(item.isPurchased
-                    ? Icons.remove_shopping_cart_outlined
-                    : Icons.check_circle_outline),
-                label: Text(item.isPurchased
-                    ? 'Marcar como pendente'
-                    : 'Marcar como comprado'),
-                style: item.isPurchased
-                    ? FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSurface,
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    _showMoveBottomSheet(context, ref, item),
-                icon: const Icon(Icons.drive_file_move_outlined),
-                label: const Text('Mover para outra lista'),
-              ),
-              if (item.price != null && item.name.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      _showPriceSearchBottomSheet(context, item),
-                  icon: const Icon(Icons.search_outlined),
-                  label: const Text('Buscar mais barato'),
-                ),
-              ],
-            ],
-          );
+          return _DetailBody(item: item);
         },
       ),
     );
   }
 
-  void _showMoveBottomSheet(
-      BuildContext context, WidgetRef ref, SavedItem item) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Consumer(
-        builder: (context, ref, _) {
-          final local =
-              ref.watch(collectionsStreamProvider).valueOrNull ?? [];
-          final shared =
-              ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
-          final available = [...local, ...shared]
-              .where((c) =>
-                  c.id != item.collectionId &&
-                  c.remoteId != item.collectionId)
-              .toList();
+  Widget _buildSkeleton(BuildContext context) {
+    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          height: 240,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(28),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+            height: 28,
+            width: 240,
+            decoration:
+                BoxDecoration(color: color, borderRadius: BorderRadius.circular(8))),
+        const SizedBox(height: 12),
+        Container(
+            height: 16,
+            width: 120,
+            decoration:
+                BoxDecoration(color: color, borderRadius: BorderRadius.circular(8))),
+      ],
+    );
+  }
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text('Mover para',
-                    style: Theme.of(context).textTheme.titleMedium),
-              ),
-              if (available.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Nenhuma outra lista disponível.'),
-                )
-              else
-                ...available.map((c) => ListTile(
-                      leading: c.emoji != null
-                          ? Text(c.emoji!,
-                              style: const TextStyle(fontSize: 24))
-                          : const Icon(Icons.folder_outlined),
-                      title: Text(c.name),
-                      trailing: c.isShared
-                          ? const Icon(Icons.people_outline, size: 16)
-                          : null,
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        final targetId = c.isShared
-                            ? (c.remoteId ?? c.id)
-                            : c.id;
-                        await ref
-                            .read(itemsNotifierProvider(item.collectionId)
-                                .notifier)
-                            .moveToCollection(item, targetId);
-                        if (context.mounted) context.pop();
-                      },
-                    )),
-              const SizedBox(height: 16),
-            ],
-          );
-        },
+  Future<void> _confirmDelete(
+      BuildContext context, WidgetRef ref, SavedItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir item'),
+        content: const Text('Tem certeza que deseja excluir este item?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
       ),
     );
+    if (confirmed == true && context.mounted) {
+      await ref
+          .read(itemsNotifierProvider(item.collectionId).notifier)
+          .delete(item.id);
+      if (context.mounted) context.pop();
+    }
   }
 
-  void _showPriceSearchBottomSheet(BuildContext context, SavedItem item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _PriceSearchSheet(item: item),
+}
+
+class _DetailBody extends ConsumerWidget {
+  final SavedItem item;
+  const _DetailBody({required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppDesignTokens>()!;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      children: [
+        _ImageCard(item: item, tokens: tokens, colorScheme: colorScheme),
+        const SizedBox(height: 24),
+
+        Text(
+          item.name,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+              ),
+        ),
+
+        if (item.price != null) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'R\$ ${item.price!.toStringAsFixed(2).replaceAll('.', ',')}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+
+        if (item.notes != null && item.notes!.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _NotesCard(notes: item.notes!, colorScheme: colorScheme, tokens: tokens),
+        ],
+
+        if (item.addedBy != null) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.person_outline,
+                  size: 16, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                'Adicionado por ${item.addedBy}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+        ],
+
+        const SizedBox(height: 28),
+
+        _PrimaryToggleButton(item: item, tokens: tokens, colorScheme: colorScheme),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            if (item.url != null) ...[
+              Expanded(
+                child: _PillOutlined(
+                  icon: Icons.open_in_new,
+                  label: 'Ver produto',
+                  onTap: () => _launchProductUrl(context, item.url!),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: _PillOutlined(
+                icon: Icons.swap_horiz,
+                label: 'Mover lista',
+                onTap: () => _showMoveBottomSheet(context, ref, item),
+              ),
+            ),
+          ],
+        ),
+        if (item.price != null && item.name.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _PillOutlined(
+            icon: Icons.search_outlined,
+            label: 'Buscar mais barato',
+            onTap: () => _showPriceSearchBottomSheet(context, item),
+          ),
+        ],
+      ],
     );
   }
 
-  Future<void> _launchUrl(BuildContext context, String url) async {
+  Future<void> _launchProductUrl(BuildContext context, String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) {
       if (context.mounted) {
@@ -325,6 +259,379 @@ class ItemDetailPage extends ConsumerWidget {
         );
       }
     }
+  }
+
+  void _showMoveBottomSheet(
+      BuildContext context, WidgetRef ref, SavedItem item) {
+    final tokens = Theme.of(context).extension<AppDesignTokens>()!;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(tokens.radiusLg)),
+      ),
+      builder: (ctx) => Consumer(
+        builder: (context, ref, _) {
+          final local =
+              ref.watch(collectionsStreamProvider).valueOrNull ?? [];
+          final shared =
+              ref.watch(sharedCollectionsStreamProvider).valueOrNull ?? [];
+          final available = [...local, ...shared]
+              .where((c) =>
+                  c.id != item.collectionId &&
+                  c.remoteId != item.collectionId)
+              .toList();
+
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Mover para',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                if (available.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Nenhuma outra lista disponível.'),
+                  )
+                else
+                  ...available.map((c) => ListTile(
+                        leading: c.emoji != null
+                            ? Text(c.emoji!,
+                                style: const TextStyle(fontSize: 24))
+                            : const Icon(Icons.folder_outlined),
+                        title: Text(c.name),
+                        trailing: c.isShared
+                            ? const Icon(Icons.people_outline, size: 16)
+                            : null,
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          final targetId =
+                              c.isShared ? (c.remoteId ?? c.id) : c.id;
+                          await ref
+                              .read(itemsNotifierProvider(item.collectionId)
+                                  .notifier)
+                              .moveToCollection(item, targetId);
+                          if (context.mounted) context.pop();
+                        },
+                      )),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showPriceSearchBottomSheet(BuildContext context, SavedItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _PriceSearchSheet(item: item),
+    );
+  }
+}
+
+class _ImageCard extends StatelessWidget {
+  final SavedItem item;
+  final AppDesignTokens tokens;
+  final ColorScheme colorScheme;
+  const _ImageCard(
+      {required this.item, required this.tokens, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage =
+        item.imageUrl != null || (item.localImagePath?.isNotEmpty ?? false);
+    return Hero(
+      tag: 'item-image-${item.id}',
+      child: Material(
+        color: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
+          child: Container(
+            height: 260,
+            color: colorScheme.surfaceContainerHighest,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (item.imageUrl != null)
+                  CachedNetworkImage(
+                    imageUrl: item.imageUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, _) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (_, _, _) => Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 56,
+                        color: colorScheme.onSurfaceVariant),
+                  )
+                else if (item.localImagePath?.isNotEmpty ?? false)
+                  Image.file(File(item.localImagePath!), fit: BoxFit.cover)
+                else
+                  Center(
+                    child: Icon(Icons.image_outlined,
+                        size: 64, color: colorScheme.onSurfaceVariant),
+                  ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: _StatusBadge(isPurchased: item.isPurchased),
+                ),
+                if (item.store != null)
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: _StoreBadge(store: item.store!),
+                  ),
+                if (!hasImage)
+                  const SizedBox.shrink(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final bool isPurchased;
+  const _StatusBadge({required this.isPurchased});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bg = isPurchased ? Colors.green.shade600 : colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: bg.withValues(alpha: 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Text(
+        isPurchased ? 'COMPRADO' : 'PENDENTE',
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 11,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _StoreBadge extends StatelessWidget {
+  final String store;
+  const _StoreBadge({required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.store_outlined, size: 14, color: Colors.black87),
+          const SizedBox(width: 6),
+          Text(
+            store,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotesCard extends StatelessWidget {
+  final String notes;
+  final ColorScheme colorScheme;
+  final AppDesignTokens tokens;
+  const _NotesCard(
+      {required this.notes,
+      required this.colorScheme,
+      required this.tokens});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.notes_rounded, size: 18, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Observações',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            notes,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrimaryToggleButton extends ConsumerWidget {
+  final SavedItem item;
+  final AppDesignTokens tokens;
+  final ColorScheme colorScheme;
+  const _PrimaryToggleButton(
+      {required this.item, required this.tokens, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final purchased = item.isPurchased;
+    final label =
+        purchased ? 'Marcar como pendente' : 'Marcar como comprado';
+    final icon = purchased
+        ? Icons.remove_shopping_cart_outlined
+        : Icons.check_circle_outline;
+
+    final decoration = purchased
+        ? BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(999),
+          )
+        : BoxDecoration(
+            gradient: tokens.primaryGradient,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: tokens.tintedShadow,
+          );
+    final fg = purchased ? colorScheme.onSurface : Colors.white;
+
+    return DecoratedBox(
+      decoration: decoration,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => ref
+              .read(itemsNotifierProvider(item.collectionId).notifier)
+              .toggleStatus(item),
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: fg),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PillOutlined extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _PillOutlined(
+      {required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: colorScheme.surfaceContainerLow,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
