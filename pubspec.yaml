@@ -66,6 +66,9 @@ dependencies:
   # Deep links (fluxo de convite)
   app_links: ^6.4.0
 
+  # Connection state monitoring (online/offline)
+  connectivity_plus: ^5.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -24,6 +24,13 @@ class CollectionModel {
   String? remoteId;
   String? inviteCode;
 
+  // Campos de visibilidade pública/privada
+  bool isPublic = false;
+
+  // Campos de sincronização ISAR ↔ Supabase
+  late int syncedAt; // Timestamp (ms) da última sincronização
+  bool needsSync = false; // Tem mudanças não sincronizadas?
+
   Collection toDomain() => Collection(
         id: id,
         name: name,
@@ -35,6 +42,7 @@ class CollectionModel {
         isShared: isShared,
         remoteId: remoteId,
         inviteCode: inviteCode,
+        isPublic: isPublic,
       );
 
   static CollectionModel fromDomain(Collection entity) => CollectionModel()
@@ -47,5 +55,8 @@ class CollectionModel {
     ..coverImagePath = entity.coverImagePath
     ..isShared = entity.isShared
     ..remoteId = entity.remoteId
-    ..inviteCode = entity.inviteCode;
+    ..inviteCode = entity.inviteCode
+    ..isPublic = entity.isPublic
+    ..syncedAt = DateTime.now().millisecondsSinceEpoch
+    ..needsSync = false;
 }

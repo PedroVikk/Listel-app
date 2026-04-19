@@ -47,23 +47,38 @@ const CollectionModelSchema = CollectionSchema(
       name: r'inviteCode',
       type: IsarType.string,
     ),
-    r'isShared': PropertySchema(
+    r'isPublic': PropertySchema(
       id: 6,
+      name: r'isPublic',
+      type: IsarType.bool,
+    ),
+    r'isShared': PropertySchema(
+      id: 7,
       name: r'isShared',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'name',
       type: IsarType.string,
     ),
+    r'needsSync': PropertySchema(
+      id: 9,
+      name: r'needsSync',
+      type: IsarType.bool,
+    ),
     r'remoteId': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'remoteId',
       type: IsarType.string,
     ),
+    r'syncedAt': PropertySchema(
+      id: 11,
+      name: r'syncedAt',
+      type: IsarType.long,
+    ),
     r'updatedAt': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -143,10 +158,13 @@ void _collectionModelSerialize(
   writer.writeString(offsets[3], object.emoji);
   writer.writeString(offsets[4], object.id);
   writer.writeString(offsets[5], object.inviteCode);
-  writer.writeBool(offsets[6], object.isShared);
-  writer.writeString(offsets[7], object.name);
-  writer.writeString(offsets[8], object.remoteId);
-  writer.writeDateTime(offsets[9], object.updatedAt);
+  writer.writeBool(offsets[6], object.isPublic);
+  writer.writeBool(offsets[7], object.isShared);
+  writer.writeString(offsets[8], object.name);
+  writer.writeBool(offsets[9], object.needsSync);
+  writer.writeString(offsets[10], object.remoteId);
+  writer.writeLong(offsets[11], object.syncedAt);
+  writer.writeDateTime(offsets[12], object.updatedAt);
 }
 
 CollectionModel _collectionModelDeserialize(
@@ -162,11 +180,14 @@ CollectionModel _collectionModelDeserialize(
   object.emoji = reader.readStringOrNull(offsets[3]);
   object.id = reader.readString(offsets[4]);
   object.inviteCode = reader.readStringOrNull(offsets[5]);
-  object.isShared = reader.readBool(offsets[6]);
+  object.isPublic = reader.readBool(offsets[6]);
+  object.isShared = reader.readBool(offsets[7]);
   object.isarId = id;
-  object.name = reader.readString(offsets[7]);
-  object.remoteId = reader.readStringOrNull(offsets[8]);
-  object.updatedAt = reader.readDateTime(offsets[9]);
+  object.name = reader.readString(offsets[8]);
+  object.needsSync = reader.readBool(offsets[9]);
+  object.remoteId = reader.readStringOrNull(offsets[10]);
+  object.syncedAt = reader.readLong(offsets[11]);
+  object.updatedAt = reader.readDateTime(offsets[12]);
   return object;
 }
 
@@ -192,10 +213,16 @@ P _collectionModelDeserializeProp<P>(
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readLong(offset)) as P;
+    case 12:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1108,6 +1135,16 @@ extension CollectionModelQueryFilter
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      isPublicEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isPublic',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
       isSharedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1310,6 +1347,16 @@ extension CollectionModelQueryFilter
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      needsSyncEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'needsSync',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
       remoteIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1464,6 +1511,62 @@ extension CollectionModelQueryFilter
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      syncedAtEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'syncedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      syncedAtGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'syncedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      syncedAtLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'syncedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
+      syncedAtBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'syncedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterFilterCondition>
       updatedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1610,6 +1713,20 @@ extension CollectionModelQuerySortBy
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByIsPublic() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isPublic', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByIsPublicDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isPublic', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
       sortByIsShared() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isShared', Sort.asc);
@@ -1637,6 +1754,20 @@ extension CollectionModelQuerySortBy
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByNeedsSync() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsSync', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortByNeedsSyncDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsSync', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
       sortByRemoteId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'remoteId', Sort.asc);
@@ -1647,6 +1778,20 @@ extension CollectionModelQuerySortBy
       sortByRemoteIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortBySyncedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      sortBySyncedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncedAt', Sort.desc);
     });
   }
 
@@ -1749,6 +1894,20 @@ extension CollectionModelQuerySortThenBy
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByIsPublic() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isPublic', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByIsPublicDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isPublic', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
       thenByIsShared() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isShared', Sort.asc);
@@ -1789,6 +1948,20 @@ extension CollectionModelQuerySortThenBy
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByNeedsSync() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsSync', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenByNeedsSyncDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsSync', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
       thenByRemoteId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'remoteId', Sort.asc);
@@ -1799,6 +1972,20 @@ extension CollectionModelQuerySortThenBy
       thenByRemoteIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenBySyncedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QAfterSortBy>
+      thenBySyncedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncedAt', Sort.desc);
     });
   }
 
@@ -1863,6 +2050,13 @@ extension CollectionModelQueryWhereDistinct
   }
 
   QueryBuilder<CollectionModel, CollectionModel, QDistinct>
+      distinctByIsPublic() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isPublic');
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct>
       distinctByIsShared() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isShared');
@@ -1876,10 +2070,24 @@ extension CollectionModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct>
+      distinctByNeedsSync() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'needsSync');
+    });
+  }
+
   QueryBuilder<CollectionModel, CollectionModel, QDistinct> distinctByRemoteId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CollectionModel, CollectionModel, QDistinct>
+      distinctBySyncedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncedAt');
     });
   }
 
@@ -1938,6 +2146,12 @@ extension CollectionModelQueryProperty
     });
   }
 
+  QueryBuilder<CollectionModel, bool, QQueryOperations> isPublicProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isPublic');
+    });
+  }
+
   QueryBuilder<CollectionModel, bool, QQueryOperations> isSharedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isShared');
@@ -1950,9 +2164,21 @@ extension CollectionModelQueryProperty
     });
   }
 
+  QueryBuilder<CollectionModel, bool, QQueryOperations> needsSyncProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'needsSync');
+    });
+  }
+
   QueryBuilder<CollectionModel, String?, QQueryOperations> remoteIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'remoteId');
+    });
+  }
+
+  QueryBuilder<CollectionModel, int, QQueryOperations> syncedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncedAt');
     });
   }
 

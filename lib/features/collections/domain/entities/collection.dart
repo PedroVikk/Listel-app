@@ -22,6 +22,10 @@ class Collection {
   /// Código de convite de 8 chars; null para locais.
   final String? inviteCode;
 
+  // Campo de visibilidade (Fase 3: públicas/privadas)
+  /// true = acessível por outros usuários; false = privada (padrão).
+  final bool isPublic;
+
   const Collection({
     required this.id,
     required this.name,
@@ -33,6 +37,7 @@ class Collection {
     this.isShared = false,
     this.remoteId,
     this.inviteCode,
+    this.isPublic = false,
   });
 
   Collection copyWith({
@@ -46,6 +51,7 @@ class Collection {
     bool? isShared,
     String? remoteId,
     String? inviteCode,
+    bool? isPublic,
   }) {
     return Collection(
       id: id ?? this.id,
@@ -60,6 +66,7 @@ class Collection {
       isShared: isShared ?? this.isShared,
       remoteId: remoteId ?? this.remoteId,
       inviteCode: inviteCode ?? this.inviteCode,
+      isPublic: isPublic ?? this.isPublic,
     );
   }
 }

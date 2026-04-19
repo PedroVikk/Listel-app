@@ -37,6 +37,11 @@ class SavedItemModel {
   String? addedBy;
   String? purchasedBy;
 
+  // Campos de sincronização ISAR ↔ Supabase
+  String? remoteId; // UUID Supabase para itens compartilhados
+  late int syncedAt; // Timestamp (ms) da última sincronização
+  bool needsSync = false; // Tem mudanças não sincronizadas?
+
   SavedItem toDomain() => SavedItem(
         id: id,
         collectionId: collectionId,
@@ -72,5 +77,7 @@ class SavedItemModel {
     ..createdAt = entity.createdAt
     ..updatedAt = entity.updatedAt
     ..addedBy = entity.addedBy
-    ..purchasedBy = entity.purchasedBy;
+    ..purchasedBy = entity.purchasedBy
+    ..syncedAt = DateTime.now().millisecondsSinceEpoch
+    ..needsSync = false;
 }
